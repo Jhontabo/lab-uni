@@ -66,4 +66,10 @@ class User extends Authenticatable implements HasAvatar, FilamentUser
             $q->where('name', 'docente'); // Ajusta al nombre de tu rol
         });
     }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class);
+    }
 }
+

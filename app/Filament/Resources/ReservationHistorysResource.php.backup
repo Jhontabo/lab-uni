@@ -24,19 +24,11 @@ class ReservationHistorysResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        if (!Auth::check()) {
-            return null;
-        }
-        
         return static::getModel()::where('user_id', Auth::id())->count();
     }
 
     public static function getNavigationBadgeColor(): string
     {
-        if (!Auth::check()) {
-            return 'gray';
-        }
-        
         $pendientes = static::getModel()::where('user_id', Auth::id())
             ->where('status', 'pending')
             ->count();
@@ -51,29 +43,11 @@ class ReservationHistorysResource extends Resource
             !$user->hasRole('COORDINADOR');
     }
 
-    public static function getEloquentQuery(): Builder
+    public static function query(Builder $query): Builder
     {
-        // Debug: Log current user ID
-        if (Auth::check()) {
-            \Log::info('ReservationHistorysResource: User ID ' . Auth::id() . ' is accessing their reservations');
-        } else {
-            \Log::warning('ReservationHistorysResource: No authenticated user found');
-            // Return empty result if no user is authenticated
-            return parent::getEloquentQuery()->whereRaw('1 = 0');
-        }
-
-        $query = parent::getEloquentQuery()
-            ->where('user_id', Auth::id())
+        return $query->where('user_id', Auth::id())
             ->with(['schedule', 'laboratory'])
             ->latest();
-
-        // Debug: Log the SQL query
-        \Log::info('ReservationHistorysResource: SQL Query', [
-            'sql' => $query->toSql(),
-            'bindings' => $query->getBindings()
-        ]);
-
-        return $query;
     }
 
     public static function canCreate(): bool

@@ -8,89 +8,94 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Booking extends Model
 {
-  use HasFactory;
+    use HasFactory;
 
-  protected $table = 'bookings';
+    protected $table = 'bookings';
 
-  protected $fillable = [
-    'first_name',
-    'last_name',
-    'email',
-    'rejection_reason',
-    'schedule_id',
-    'user_id',
-    'laboratory_id',
-    'project_type',
-    'academic_program',
-    'semester',
-    'applicants',
-    'research_name',
-    'advisor',
-    'products',
-    'start_at',
-    'end_at',
-    'color',
-    'status',
-  ];
+    protected $fillable = [
+        'name',
+        'last_name',
+        'email',
+        'rejection_reason',
+        'schedule_id',
+        'user_id',
+        'laboratory_id',
+        'project_type',
+        'academic_program',
+        'semester',
+        'applicants',
+        'research_name',
+        'advisor',
+        'products',
+        'start_at',
+        'end_at',
+        'color',
+        'status',
+    ];
 
-  // Constantes de estado
-  public const STATUS_PENDING   = 'pending';
-  public const STATUS_APPROVED  = 'approved';
-  public const STATUS_RESERVED  = 'reserved';
-  public const STATUS_REJECTED  = 'rejected';
+    // Constantes de estado
+    public const STATUS_PENDING = 'pending';
 
-  protected $casts = [
-    'products' => 'array',
-    'start_at' => 'datetime',
-    'end_at'   => 'datetime',
-  ];
+    public const STATUS_APPROVED = 'approved';
 
-  // Scopes de estado
-  public function scopePending($query)
-  {
-    return $query->where('status', self::STATUS_PENDING);
-  }
+    public const STATUS_RESERVED = 'reserved';
 
-  // Helpers de estado
-  public function isPending(): bool
-  {
-    return $this->status === self::STATUS_PENDING;
-  }
-  public function isApproved(): bool
-  {
-    return $this->status === self::STATUS_APPROVED;
-  }
-  public function isReserved(): bool
-  {
-    return $this->status === self::STATUS_RESERVED;
-  }
-  public function isRejected(): bool
-  {
-    return $this->status === self::STATUS_REJECTED;
-  }
+    public const STATUS_REJECTED = 'rejected';
 
-  // Relaciones
-  public function schedule()
-  {
-    return $this->belongsTo(Schedule::class, 'schedule_id');
-  }
+    protected $casts = [
+        'products' => 'array',
+        'start_at' => 'datetime',
+        'end_at' => 'datetime',
+    ];
 
-  public function laboratory()
-  {
-    return $this->belongsTo(Laboratory::class, 'laboratory_id');
-  }
+    // Scopes de estado
+    public function scopePending($query)
+    {
+        return $query->where('status', self::STATUS_PENDING);
+    }
 
-  public function user()
-  {
-    return $this->belongsTo(User::class, 'user_id');
-  }
+    // Helpers de estado
+    public function isPending(): bool
+    {
+        return $this->status === self::STATUS_PENDING;
+    }
 
+    public function isApproved(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
+    }
 
-  public function products(): BelongsToMany
-  {
-    return $this->belongsToMany(Product::class)
-      ->withPivot(['start_at', 'end_at', 'status'])
-      ->using(BookingProduct::class) // Opcional: modelo pivote personalizado
-      ->withTimestamps();
-  }
+    public function isReserved(): bool
+    {
+        return $this->status === self::STATUS_RESERVED;
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === self::STATUS_REJECTED;
+    }
+
+    // Relaciones
+    public function schedule()
+    {
+        return $this->belongsTo(Schedule::class, 'schedule_id');
+    }
+
+    public function laboratory()
+    {
+        return $this->belongsTo(Laboratory::class, 'laboratory_id');
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function products(): BelongsToMany
+    {
+        return $this->belongsToMany(Product::class)
+            ->withPivot(['start_at', 'end_at', 'status'])
+            ->using(BookingProduct::class) // Opcional: modelo pivote personalizado
+            ->withTimestamps();
+    }
 }
