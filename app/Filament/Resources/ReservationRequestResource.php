@@ -17,11 +17,13 @@ class ReservationRequestResource extends Resource
 {
     protected static ?string $model = Booking::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-calendar';
+    // protected static ?string $navigationIcon = 'heroicon-o-calendar';
 
     protected static ?string $navigationLabel = 'Solicitud de reserva';
 
     protected static ?string $navigationGroup = 'Gestion de Reservas';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'Solicitud';
 

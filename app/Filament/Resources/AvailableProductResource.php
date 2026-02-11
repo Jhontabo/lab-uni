@@ -3,23 +3,27 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\AvailableProductResource\Pages;
-use App\Models\Loan;
 use App\Models\AvailableProduct;
+use App\Models\Loan;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Notifications\Notification;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class AvailableProductResource extends Resource
 {
     protected static ?string $model = AvailableProduct::class;
-    protected static ?string $navigationIcon = 'heroicon-m-shopping-cart';
+
+    // protected static ?string $navigationIcon = 'heroicon-m-shopping-cart';
     protected static ?string $navigationGroup = 'Prestamos';
+
     protected static ?string $navigationLabel = 'Solicitar préstamo';
+
     protected static ?string $modelLabel = 'Producto';
+
     protected static ?string $pluralLabel = 'Productos para préstamos';
 
     public static function getEloquentQuery(): Builder
@@ -33,6 +37,7 @@ class AvailableProductResource extends Resource
     public static function canViewAny(): bool
     {
         $user = auth()->user();
+
         return $user &&
             ! $user->hasRole('LABORATORISTA') &&
             ! $user->hasRole('COORDINADOR');
@@ -52,7 +57,7 @@ class AvailableProductResource extends Resource
                     ->label('Producto')
                     ->searchable()
                     ->sortable()
-                    ->description(fn($record) => substr($record->description, 0, 50) . '...')
+                    ->description(fn ($record) => substr($record->description, 0, 50).'...')
                     ->weight('medium')
                     ->color('primary'),
 
@@ -60,21 +65,21 @@ class AvailableProductResource extends Resource
                     ->label('Cantidad disponible')
                     ->sortable()
                     ->alignCenter()
-                    ->color(fn($record) => $record->available_quantity > 10 ? 'success' : ($record->available_quantity > 0 ? 'warning' : 'danger'))
-                    ->icon(fn($record) => $record->available_quantity > 10 ? 'heroicon-o-check-circle' : ($record->available_quantity > 0 ? 'heroicon-o-exclamation-circle' : 'heroicon-o-x-circle')),
+                    ->color(fn ($record) => $record->available_quantity > 10 ? 'success' : ($record->available_quantity > 0 ? 'warning' : 'danger'))
+                    ->icon(fn ($record) => $record->available_quantity > 10 ? 'heroicon-o-check-circle' : ($record->available_quantity > 0 ? 'heroicon-o-exclamation-circle' : 'heroicon-o-x-circle')),
 
                 TextColumn::make('product_type')
                     ->label('Tipo')
                     ->badge()
-                    ->color(fn($state) => match ($state) {
+                    ->color(fn ($state) => match ($state) {
                         'equipment' => 'info',
-                        'supply'    => 'primary',
-                        default      => 'gray',
+                        'supply' => 'primary',
+                        default => 'gray',
                     })
-                    ->formatStateUsing(fn($state) => match ($state) {
+                    ->formatStateUsing(fn ($state) => match ($state) {
                         'equipment' => 'Equipo',
-                        'supply'    => 'Insumo',
-                        default      => ucfirst($state),
+                        'supply' => 'Insumo',
+                        default => ucfirst($state),
                     })
                     ->sortable(),
 
@@ -88,17 +93,17 @@ class AvailableProductResource extends Resource
                 Tables\Actions\ViewAction::make()
                     ->label('Ver')
                     ->icon('heroicon-o-eye')
-                    ->modalHeading(fn($record) => "Detalles del producto: {$record->name}")
+                    ->modalHeading(fn ($record) => "Detalles del producto: {$record->name}")
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Cerrar')
-                    ->modalContent(fn($record) => view('filament.pages.view-AvailableProduct', ['product' => $record])),
+                    ->modalContent(fn ($record) => view('filament.pages.view-AvailableProduct', ['product' => $record])),
 
                 Tables\Actions\Action::make('requestLoan')
                     ->label('Solicitar')
                     ->icon('heroicon-o-clipboard-document-list')
                     ->requiresConfirmation()
                     ->modalHeading('Confirmar solicitud')
-                    ->modalDescription(fn(AvailableProduct $record) => "¿Confirma la solicitud del producto '{$record->name}'?")
+                    ->modalDescription(fn (AvailableProduct $record) => "¿Confirma la solicitud del producto '{$record->name}'?")
                     ->action(function (AvailableProduct $record) {
                         // Validar cantidad mínima
                         if ($record->available_quantity < 5) {
@@ -112,9 +117,9 @@ class AvailableProductResource extends Resource
                         }
 
                         Loan::create([
-                            'product_id'   => $record->id,
-                            'user_id'      => auth()->id(),
-                            'status'       => 'pending',
+                            'product_id' => $record->id,
+                            'user_id' => auth()->id(),
+                            'status' => 'pending',
                             'requested_at' => now(),
                         ]);
 

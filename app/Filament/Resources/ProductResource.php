@@ -77,7 +77,7 @@ class ProductResource extends Resource
 {
   protected static ?string $model = Product::class;
 
-  protected static ?string $navigationIcon = 'heroicon-o-cube';
+
   protected static ?string $navigationLabel = 'Inventario';
   protected static ?string $navigationGroup = 'Inventario';
   protected static ?string $modelLabel = 'Producto';

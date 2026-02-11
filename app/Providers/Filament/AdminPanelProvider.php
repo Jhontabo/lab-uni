@@ -5,10 +5,12 @@ namespace App\Providers\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Hasnayeen\Themes\Http\Middleware\SetTheme;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
@@ -16,9 +18,8 @@ use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
-use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
-use Hasnayeen\Themes\Http\Middleware\SetTheme;
 use Joaopaulolndev\FilamentEditProfile\FilamentEditProfilePlugin;
+use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
@@ -35,8 +36,25 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            ->navigationGroups([
+                NavigationGroup::make()
+                    ->label('Prestamos')
+                    ->icon('heroicon-o-clipboard-document-list'),
+                NavigationGroup::make()
+                    ->label('Gestion de Reservas')
+                    ->icon('heroicon-o-calendar-days'),
+                NavigationGroup::make()
+                    ->label('Administracion')
+                    ->icon('heroicon-o-user-group'),
+                NavigationGroup::make()
+                    ->label('Inventario')
+                    ->icon('heroicon-o-cube'),
+                NavigationGroup::make()
+                    ->label('Laboratorios')
+                    ->icon('heroicon-o-beaker'),
+            ])
 
-            #->plugin(FilamentSpatieRolesPermissionsPlugin::make())
+            // ->plugin(FilamentSpatieRolesPermissionsPlugin::make())
 
             ->databaseNotifications()
             ->plugins([
@@ -56,9 +74,8 @@ class AdminPanelProvider extends PanelProvider
                         rules: 'mimes:jpeg,png|max:1024'
                     )
                     ->customProfileComponents([
-                        \App\Livewire\CustomProfileComponent::class
-                    ])
-
+                        \App\Livewire\CustomProfileComponent::class,
+                    ]),
 
             ])
 
@@ -76,20 +93,19 @@ class AdminPanelProvider extends PanelProvider
                     ->plugins(['dayGrid', 'timeGrid'])
                     ->config([
                         'dayMaxEvents' => true,
-                        'moreLinkClick' => 'day'
+                        'moreLinkClick' => 'day',
                     ])
             )
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                 Pages\Dashboard::class,
+                Pages\Dashboard::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
-                //Widgets\AccountWidget::class,
-                //Widgets\FilamentInfoWidget::class,
+                // Widgets\AccountWidget::class,
+                // Widgets\FilamentInfoWidget::class,
             ])
-
 
             ->middleware([
                 EncryptCookies::class,
@@ -101,7 +117,7 @@ class AdminPanelProvider extends PanelProvider
                 SubstituteBindings::class,
                 DisableBladeIconComponents::class,
                 DispatchServingFilamentEvent::class,
-                SetTheme::class
+                SetTheme::class,
             ])
             ->authMiddleware([
                 Authenticate::class,

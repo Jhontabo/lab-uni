@@ -6,12 +6,11 @@ use App\Filament\Resources\LaboratoryResource\Pages;
 use App\Models\Laboratory;
 use App\Models\User;
 use Filament\Forms;
-use App\Models\Product;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Forms\Components\Select;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -19,10 +18,15 @@ class LaboratoryResource extends Resource
 {
     protected static ?string $model = Laboratory::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-beaker';
+    // protected static ?string $navigationIcon = 'heroicon-o-beaker';
     protected static ?string $navigationLabel = 'Laboratorios';
-    protected static ?string $navigationGroup = 'Inventario';
+
+    protected static ?string $navigationGroup = 'Laboratorios';
+
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $pluralModelLabel = 'Laboratorios';
+
     protected static ?string $modelLabel = 'Laboratorio';
 
     public static function getNavigationBadge(): ?string
@@ -67,10 +71,10 @@ class LaboratoryResource extends Resource
                                     ->relationship(
                                         name: 'products',
                                         titleAttribute: 'name',
-                                        modifyQueryUsing: fn(Builder $query, ?Model $record) => $query->where('laboratory_id', $record?->id)
+                                        modifyQueryUsing: fn (Builder $query, ?Model $record) => $query->where('laboratory_id', $record?->id)
                                     )
                                     ->searchable()
-                                    ->preload()
+                                    ->preload(),
 
                             ])
                             ->columns(2),
@@ -103,23 +107,22 @@ class LaboratoryResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->weight('medium')
-                    ->description(fn(Laboratory $record) => $record->location),
+                    ->description(fn (Laboratory $record) => $record->location),
 
                 Tables\Columns\TextColumn::make('capacity')
                     ->badge()
                     ->label('Capacidad')
-                    ->formatStateUsing(fn($state): string => "{$state} people")
-                    ->color(fn($state): string => match (true) {
+                    ->formatStateUsing(fn ($state): string => "{$state} people")
+                    ->color(fn ($state): string => match (true) {
                         $state > 30 => 'success',
                         $state > 15 => 'warning',
                         default => 'danger',
                     })
                     ->sortable(),
 
-
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Encargado')
-                    ->getStateUsing(fn(Laboratory $record): string => trim($record->user->name . ' ' . $record->user->last_name))
+                    ->getStateUsing(fn (Laboratory $record): string => trim($record->user->name.' '.$record->user->last_name))
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('created_at')

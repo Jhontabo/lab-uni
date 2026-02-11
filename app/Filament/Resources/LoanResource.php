@@ -6,9 +6,9 @@ use App\Filament\Resources\LoanResource\Pages;
 use App\Models\Loan;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
@@ -16,10 +16,15 @@ class LoanResource extends Resource
 {
     protected static ?string $model = Loan::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
+    // protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-list';
     protected static ?string $navigationLabel = 'Mis préstamos';
+
     protected static ?string $navigationGroup = 'Prestamos';
+
+    protected static ?int $navigationSort = 1;
+
     protected static ?string $modelLabel = 'Préstamo';
+
     protected static ?string $pluralModelLabel = 'Mis préstamos';
 
     public static function getEloquentQuery(): Builder
@@ -28,12 +33,15 @@ class LoanResource extends Resource
             ->with(['product'])
             ->where('user_id', Auth::id());
     }
+
     public static function canViewAny(): bool
     {
         $user = auth()->user();
+
         return $user &&
-            !$user->hasRole('COORDINADOR');
+            ! $user->hasRole('COORDINADOR');
     }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -50,14 +58,14 @@ class LoanResource extends Resource
                 TextColumn::make('status')
                     ->label('Estado')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'pending' => 'warning',
                         'approved' => 'success',
                         'rejected' => 'danger',
                         'returned' => 'info',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn(string $state): string => match ($state) {
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
                         'pending' => 'Pendiente',
                         'approved' => 'Aprobado',
                         'rejected' => 'Rechazado',

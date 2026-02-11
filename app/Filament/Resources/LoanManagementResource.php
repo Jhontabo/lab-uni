@@ -19,11 +19,13 @@ class LoanManagementResource extends Resource
 {
     protected static ?string $model = Loan::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
+    // protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
 
     protected static ?string $navigationLabel = 'Gestión de Préstamos';
 
     protected static ?string $navigationGroup = 'Prestamos';
+
+    protected static ?int $navigationSort = 2;
 
     protected static ?string $modelLabel = 'Prestamo';
 

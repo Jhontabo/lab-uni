@@ -26,13 +26,15 @@ class BookingResource extends Resource
 {
     protected static ?string $model = Schedule::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
+    // protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
 
     protected static ?string $modelLabel = 'Reserva de Espacio';
 
     protected static ?string $navigationLabel = 'Reservar Espacio';
 
     protected static ?string $navigationGroup = 'Gestion de Reservas';
+
+    protected static ?int $navigationSort = 1;
 
     public static function canViewAny(): bool
     {
