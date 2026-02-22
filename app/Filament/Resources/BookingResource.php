@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\BookingResource\Pages\ListBookings;
+use App\Models\AcademicProgram;
 use App\Models\Booking;
 use App\Models\Product;
 use App\Models\Schedule;
@@ -19,6 +20,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Auth;
 
@@ -90,6 +92,27 @@ class BookingResource extends Resource
                         fn (string $state): string => Carbon::parse($state)->locale('es')->translatedFormat('l, d \d\e F \d\e Y - g:i A')
                     ),
             ])
+            ->filters([
+                SelectFilter::make('laboratory')
+                    ->label('Espacio Académico')
+                    ->relationship('laboratory', 'name')
+                    ->searchable()
+                    ->preload(),
+                SelectFilter::make('availability')
+                    ->label('Disponibilidad')
+                    ->options([
+                        'available' => 'Libres',
+                        'occupied' => 'Ocupados',
+                    ])
+                    ->query(function ($query, $data) {
+                        if ($data['value'] === 'available') {
+                            $query->having('booking_count', 0);
+                        } elseif ($data['value'] === 'occupied') {
+                            $query->having('booking_count', '>', 0);
+                        }
+                    }),
+            ])
+            ->filtersFormColumns(2)
             ->actions([
                 TableAction::make('reservar')
                     ->label('Reservar')
@@ -116,27 +139,11 @@ class BookingResource extends Resource
 
                             Select::make('academic_program')
                                 ->label('Programa académico')
-                                ->options([
-                                    'Derecho' => 'Derecho',
-                                    'Trabajo Social' => 'Trabajo Social',
-                                    'Comunicación Social' => 'Comunicación Social',
-                                    'Psicología' => 'Psicología',
-                                    'Mercadeo' => 'Mercadeo',
-                                    'Contaduría Pública' => 'Contaduría Pública',
-                                    'Administración de Negocios Internacionales' => 'Administración de Negocios Internacionales',
-                                    'Licenciatura en Teología' => 'Licenciatura en Teología',
-                                    'Licenciatura en Educación Infantil' => 'Licenciatura en Educación Infantil',
-                                    'Licenciatura en Educación Básica Primaria' => 'Licenciatura en Educación Básica Primaria',
-                                    'Enfermería' => 'Enfermería',
-                                    'Terapia Ocupacional' => 'Terapia Ocupacional',
-                                    'Fisioterapia' => 'Fisioterapia',
-                                    'Nutrición y Dietética' => 'Nutrición y Dietética',
-                                    'Ingeniería Mecatrónica' => 'Ingeniería Mecatrónica',
-                                    'Ingeniería Civil' => 'Ingeniería Civil',
-                                    'Ingeniería de Sistemas' => 'Ingeniería de Sistemas',
-                                    'Ingeniería Ambiental' => 'Ingeniería Ambiental',
-                                    'Ingeniería de Procesos' => 'Ingeniería de Procesos',
-                                ])
+                                ->options(fn () => AcademicProgram::where('is_active', true)
+                                    ->orderBy('name')
+                                    ->pluck('name', 'name'))
+                                ->searchable()
+                                ->preload()
                                 ->required(),
 
                             Select::make('semester')

@@ -11,8 +11,8 @@ use Filament\Forms\Components\Fieldset;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Tab;
 use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -68,137 +68,137 @@ class ProductResource extends Resource
 
     public static function form(Form $form): Form
     {
-        return $form->schema([
-            Tabs::make('Información del Producto')
-                ->tabs([
-                    Tab::make('Datos Básicos')
-                        ->icon('heroicon-o-identification')
-                        ->schema([
-                            Grid::make(2)->schema([
-                                TextInput::make('name')
-                                    ->label('Nombre del Producto')
-                                    ->required()
-                                    ->maxLength(255)
-                                    ->placeholder('Ej: Microscopio Digital')
-                                    ->helperText('Nombre corto y descriptivo'),
+        return $form
+            ->columns(3)
+            ->schema([
+                Tabs::make('Información del Producto')
+                    ->columnSpanFull()
+                    ->tabs([
+                        Tab::make('Datos Básicos')
+                            ->icon('heroicon-o-identification')
+                            ->schema([
+                                Grid::make(3)->schema([
+                                    TextInput::make('name')
+                                        ->label('Nombre del Producto')
+                                        ->required()
+                                        ->maxLength(255)
+                                        ->placeholder('Ej: Microscopio Digital')
+                                        ->helperText('Nombre corto y descriptivo')
+                                        ->columnSpan(2),
 
-                                TextInput::make('serial_number')
-                                    ->label('Número de Serie')
-                                    ->maxLength(255)
-                                    ->unique(ignoreRecord: true)
-                                    ->helperText('Opcional: identificador único del equipo'),
+                                    TextInput::make('serial_number')
+                                        ->label('Número de Serie')
+                                        ->maxLength(255)
+                                        ->unique(ignoreRecord: true)
+                                        ->helperText('Opcional: identificador único del equipo'),
 
-                                Select::make('product_type')
-                                    ->label('Tipo')
-                                    ->options([
-                                        'equipment' => 'Equipo',
-                                        'supply' => 'Suministro',
-                                    ])
-                                    ->required()
-                                    ->live(),
+                                    Select::make('product_type')
+                                        ->label('Tipo')
+                                        ->options([
+                                            'equipment' => 'Equipo',
+                                            'supply' => 'Suministro',
+                                        ])
+                                        ->required()
+                                        ->live(),
 
-                                TextInput::make('unit_cost')
-                                    ->label('Costo Unitario')
-                                    ->required()
-                                    ->numeric()
-                                    ->prefix('$')
-                                    ->step(0.01),
+                                    TextInput::make('unit_cost')
+                                        ->label('Costo Unitario')
+                                        ->required()
+                                        ->numeric()
+                                        ->prefix('$')
+                                        ->step(0.01),
+
+                                    Select::make('laboratory_id')
+                                        ->label('Laboratorio')
+                                        ->options(Laboratory::all()->pluck('name', 'id'))
+                                        ->searchable()
+                                        ->preload()
+                                        ->required()
+                                        ->helperText('Ubicación donde se guarda el equipo'),
+
+                                    TextInput::make('use')
+                                        ->label('Uso del equipo')
+                                        ->placeholder('Ej: Prácticas de laboratorio'),
+
+                                    Select::make('status')
+                                        ->label('Condición')
+                                        ->options([
+                                            'new' => 'Nuevo',
+                                            'used' => 'Buen Estado',
+                                            'damaged' => 'Dañado',
+                                            'decommissioned' => 'Fuera de Servicio',
+                                        ])
+                                        ->required()
+                                        ->default('new'),
+
+                                    Toggle::make('available_for_loan')
+                                        ->label('Disponible para Préstamo')
+                                        ->default(true)
+                                        ->helperText('Permitir que estudiantes soliciten este equipo'),
+                                ]),
                             ]),
 
-                            Grid::make(2)->schema([
-                                Select::make('laboratory_id')
-                                    ->label('Laboratorio')
-                                    ->options(Laboratory::all()->pluck('name', 'id'))
-                                    ->searchable()
-                                    ->preload()
-                                    ->required()
-                                    ->helperText('Ubicación donde se guarda el equipo'),
+                        Tab::make('Inventario')
+                            ->icon('heroicon-o-cube')
+                            ->schema([
+                                Grid::make(3)->schema([
+                                    TextInput::make('available_quantity')
+                                        ->label('Cantidad en Inventario')
+                                        ->required()
+                                        ->numeric()
+                                        ->minValue(0)
+                                        ->default(1),
 
-                                TextInput::make('use')
-                                    ->label('Uso del equipo')
-                                    ->placeholder('Ej: Prácticas de laboratorio'),
+                                    DatePicker::make('acquisition_date')
+                                        ->label('Fecha de Adquisición')
+                                        ->displayFormat('d/m/Y')
+                                        ->maxDate(now()),
+                                ]),
 
-                                Select::make('status')
-                                    ->label('Condición')
-                                    ->options([
-                                        'new' => 'Nuevo',
-                                        'used' => 'Buen Estado',
-                                        'damaged' => 'Dañado',
-                                        'decommissioned' => 'Fuera de Servicio',
-                                    ])
-                                    ->required()
-                                    ->default('new'),
-
-                                Toggle::make('available_for_loan')
-                                    ->label('Disponible para Préstamo')
-                                    ->default(true)
-                                    ->helperText('Permitir que estudiantes soliciten este equipo'),
-                            ]),
-                        ]),
-
-                    Tab::make('Inventario')
-                        ->icon('heroicon-o-cube')
-                        ->schema([
-                            Grid::make(3)->schema([
-                                TextInput::make('available_quantity')
-                                    ->label('Cantidad en Inventario')
-                                    ->required()
-                                    ->numeric()
-                                    ->minValue(0)
-                                    ->default(1),
-
-                                DatePicker::make('acquisition_date')
-                                    ->label('Fecha de Adquisición')
-                                    ->displayFormat('d/m/Y')
-                                    ->maxDate(now()),
+                                Textarea::make('observations')
+                                    ->label('Observaciones')
+                                    ->maxLength(500)
+                                    ->rows(3)
+                                    ->columnSpanFull()
+                                    ->placeholder('Notas adicionales sobre el equipo...'),
                             ]),
 
-                            Textarea::make('observations')
-                                ->label('Observaciones')
-                                ->maxLength(500)
-                                ->rows(3)
-                                ->placeholder('Notas adicionales sobre el equipo...'),
-                        ]),
+                        Tab::make('Técnico')
+                            ->icon('heroicon-o-wrench-screwdriver')
+                            ->schema([
+                                Grid::make(3)->schema([
+                                    TextInput::make('brand')->label('Marca'),
+                                    TextInput::make('model')->label('Modelo'),
+                                    TextInput::make('manufacturer')->label('Fabricante'),
+                                    TextInput::make('dimensions')->label('Dimensiones'),
+                                    TextInput::make('weight')->label('Peso'),
+                                    TextInput::make('power')->label('Potencia'),
+                                ]),
 
-                    Tab::make('Técnico')
-                        ->icon('heroicon-o-wrench-screwdriver')
-                        ->schema([
-                            Grid::make(3)->schema([
-                                TextInput::make('brand')->label('Marca'),
-                                TextInput::make('model')->label('Modelo'),
-                                TextInput::make('manufacturer')->label('Fabricante'),
+                                TagsInput::make('accessories')
+                                    ->label('Accesorios')
+                                    ->columnSpanFull()
+                                    ->helperText('Presiona Enter para agregar cada accesorio'),
                             ]),
 
-                            Grid::make(2)->schema([
-                                TextInput::make('dimensions')->label('Dimensiones'),
-                                TextInput::make('weight')->label('Peso'),
+                        Tab::make('Imagen')
+                            ->icon('heroicon-o-photo')
+                            ->schema([
+                                FileUpload::make('image')
+                                    ->label('Imagen del Producto')
+                                    ->image()
+                                    ->imageEditor()
+                                    ->directory('products/images')
+                                    ->disk('public')
+                                    ->visibility('public')
+                                    ->maxSize(2048)
+                                    ->openable()
+                                    ->downloadable()
+                                    ->helperText('Imagen representativa (max 2MB). Formatos: JPG, PNG')
+                                    ->columnSpanFull(),
                             ]),
-
-                            TextInput::make('power')->label('Potencia'),
-
-                            TagsInput::make('accessories')
-                                ->label('Accesorios')
-                                ->helperText('Presiona Enter para agregar cada accesorio'),
-                        ]),
-
-                    Tab::make('Imagen')
-                        ->icon('heroicon-o-photo')
-                        ->schema([
-                            FileUpload::make('image')
-                                ->label('Imagen del Producto')
-                                ->image()
-                                ->imageEditor()
-                                ->directory('products/images')
-                                ->disk('public')
-                                ->visibility('public')
-                                ->maxSize(2048)
-                                ->openable()
-                                ->downloadable()
-                                ->helperText('Imagen representativa (max 2MB). Formatos: JPG, PNG')
-                                ->columnSpanFull(),
-                        ]),
-                ]),
-        ]);
+                    ]),
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -303,7 +303,7 @@ class ProductResource extends Resource
                     ->color('info'),
             ])
             ->filters([
-            SelectFilter::make('product_type')
+                SelectFilter::make('product_type')
                     ->label('Tipo de Producto')
                     ->options([
                         'equipment' => 'Equipo',
@@ -314,7 +314,7 @@ class ProductResource extends Resource
                     ->multiple()
                     ->searchable(),
 
-            SelectFilter::make('status')
+                SelectFilter::make('status')
                     ->label('Condición')
                     ->options([
                         'new' => 'Nuevo',
@@ -326,24 +326,24 @@ class ProductResource extends Resource
                     ])
                     ->multiple(),
 
-            SelectFilter::make('laboratory_id')
+                SelectFilter::make('laboratory_id')
                     ->label('Laboratorio')
                     ->options(Laboratory::all()->pluck('name', 'id'))
                     ->searchable()
                     ->multiple(),
 
-            TernaryFilter::make('available_for_loan')
+                TernaryFilter::make('available_for_loan')
                     ->label('Disponible para Préstamo')
                     ->trueLabel('Solo disponibles')
                     ->falseLabel('No disponibles'),
 
-            Filter::make('low_stock')
+                Filter::make('low_stock')
                     ->label('Stock Bajo')
                     ->query(fn (Builder $query): Builder => $query->whereColumn('available_quantity', '<=', 'minimum_stock'))
                     ->default(false),
-        ], layout: FiltersLayout::AboveContentCollapsible)
+            ], layout: FiltersLayout::AboveContentCollapsible)
             ->actions([
-            ActionGroup::make([
+                ActionGroup::make([
                     ViewAction::make()
                         ->icon('heroicon-o-eye')
                         ->color('info'),
@@ -371,27 +371,27 @@ class ProductResource extends Resource
                         ->modalSubmitAction(false)
                         ->hidden(fn (Product $record) => $record->product_type !== 'equipment'),
 
-            ])
+                ])
                     ->tooltip('Acciones')
                     ->icon('heroicon-s-cog-6-tooth')
                     ->color('primary'),
-        ], position: ActionsPosition::BeforeCells)
+            ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
-            BulkAction::make('markAsLost')
-                ->label('Marcar como Perdido')
-                ->icon('heroicon-o-shield-exclamation')
-                ->color('warning')
-                ->action(fn (Collection $records) => $records->each->update(['status' => 'lost', 'available_for_loan' => false]))
-                ->requiresConfirmation()
-                ->modalHeading('Marcar productos seleccionados como perdidos')
-                ->modalDescription('¿Está seguro de marcar estos productos como perdidos?')
-                ->modalSubmitActionLabel('Sí, marcar como perdidos'),
+                BulkAction::make('markAsLost')
+                    ->label('Marcar como Perdido')
+                    ->icon('heroicon-o-shield-exclamation')
+                    ->color('warning')
+                    ->action(fn (Collection $records) => $records->each->update(['status' => 'lost', 'available_for_loan' => false]))
+                    ->requiresConfirmation()
+                    ->modalHeading('Marcar productos seleccionados como perdidos')
+                    ->modalDescription('¿Está seguro de marcar estos productos como perdidos?')
+                    ->modalSubmitActionLabel('Sí, marcar como perdidos'),
 
-            BulkAction::make('decommissionSelected')
-                ->label('Dar de Baja')
-                ->icon('heroicon-o-no-symbol')
-                ->color('danger')
-                ->form([
+                BulkAction::make('decommissionSelected')
+                    ->label('Dar de Baja')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->form([
                         Select::make('decommission_type')
                             ->label('Tipo de baja')
                             ->options([
@@ -498,70 +498,70 @@ class ProductResource extends Resource
                             ->required()
                             ->columnSpanFull()
                             ->maxLength(501),
-                ])
-                ->action(function (Collection $records, array $data): void {
-                    foreach ($records as $record) {
-                        \App\Models\EquipmentDecommission::create([
-                            'product_id' => $record->id,
-                            'reason' => $data['decommission_type'],
-                            'damage_type' => $data['decommission_type'] === 'damaged'
-                              ? $data['damage_type']
-                              : null,
-                            'responsible_user_id' => $data['decommission_type'] === 'damaged' &&
-                              $data['damage_type'] === 'student'
-                              ? $data['responsible_user_id']
-                              : null,
-                            'academic_program' => $data['decommission_type'] === 'damaged' &&
-                              $data['damage_type'] === 'student'
-                              ? $data['academic_program']
-                              : null,
-                            'semester' => $data['decommission_type'] === 'damaged' &&
-                              $data['damage_type'] === 'student'
-                              ? $data['semester']
-                              : null,
-                            'decommission_date' => now(),
-                            'registered_by' => auth()->id(),
-                            'observations' => $data['observations'],
-                        ]);
+                    ])
+                    ->action(function (Collection $records, array $data): void {
+                        foreach ($records as $record) {
+                            \App\Models\EquipmentDecommission::create([
+                                'product_id' => $record->id,
+                                'reason' => $data['decommission_type'],
+                                'damage_type' => $data['decommission_type'] === 'damaged'
+                                  ? $data['damage_type']
+                                  : null,
+                                'responsible_user_id' => $data['decommission_type'] === 'damaged' &&
+                                  $data['damage_type'] === 'student'
+                                  ? $data['responsible_user_id']
+                                  : null,
+                                'academic_program' => $data['decommission_type'] === 'damaged' &&
+                                  $data['damage_type'] === 'student'
+                                  ? $data['academic_program']
+                                  : null,
+                                'semester' => $data['decommission_type'] === 'damaged' &&
+                                  $data['damage_type'] === 'student'
+                                  ? $data['semester']
+                                  : null,
+                                'decommission_date' => now(),
+                                'registered_by' => auth()->id(),
+                                'observations' => $data['observations'],
+                            ]);
 
-                        $record->update([
-                            'status' => 'decommissioned',
-                            'available_for_loan' => false,
-                            'decommissioned_at' => now(),
-                            'decommissioned_by' => auth()->id(),
-                        ]);
-                    }
+                            $record->update([
+                                'status' => 'decommissioned',
+                                'available_for_loan' => false,
+                                'decommissioned_at' => now(),
+                                'decommissioned_by' => auth()->id(),
+                            ]);
+                        }
 
-                    Notification::make()
-                        ->title('Baja registrada exitosamente')
-                        ->body("Se dieron de baja {$records->count()} equipos.")
-                        ->success()
-                        ->send();
-                })
-                ->requiresConfirmation()
-                ->modalHeading('Confirmar baja de equipos')
-                ->modalDescription('Esta acción registrará la baja de los equipos seleccionados. ¿Desea continuar?')
-                ->modalSubmitActionLabel('Confirmar baja'),
+                        Notification::make()
+                            ->title('Baja registrada exitosamente')
+                            ->body("Se dieron de baja {$records->count()} equipos.")
+                            ->success()
+                            ->send();
+                    })
+                    ->requiresConfirmation()
+                    ->modalHeading('Confirmar baja de equipos')
+                    ->modalDescription('Esta acción registrará la baja de los equipos seleccionados. ¿Desea continuar?')
+                    ->modalSubmitActionLabel('Confirmar baja'),
 
-            DeleteBulkAction::make()
-                ->icon('heroicon-o-trash')
-                ->requiresConfirmation(),
-        ])
+                DeleteBulkAction::make()
+                    ->icon('heroicon-o-trash')
+                    ->requiresConfirmation(),
+            ])
             ->emptyStateActions([
-            CreateAction::make()
-                ->label('Crear Nuevo Producto')
-                ->icon('heroicon-o-plus'),
-        ])
+                CreateAction::make()
+                    ->label('Crear Nuevo Producto')
+                    ->icon('heroicon-o-plus'),
+            ])
             ->defaultSort('name', 'asc')
             ->deferLoading()
             ->persistFiltersInSession()
             ->persistSearchInSession()
             ->striped()
             ->groups([
-            'laboratory.name',
-            'product_type',
-            'status',
-        ])
+                'laboratory.name',
+                'product_type',
+                'status',
+            ])
             ->groupingSettingsInDropdownOnDesktop()
             ->groupRecordsTriggerAction(
                 fn (Action $action) => $action
