@@ -55,7 +55,12 @@ class BookingResource extends Resource
                 Schedule::where('type', 'unstructured')
                     ->whereBetween('start_at', [$today, $limit])
                     ->orderBy('start_at')
-                    ->with(['laboratory', 'booking'])
+                    ->with(['laboratory', 'booking' => function ($query) {
+                        $query->where('status', 'approved');
+                    }])
+                    ->withCount(['booking' => function ($query) {
+                        $query->where('status', 'approved');
+                    }])
             )
             ->columns([
                 TextColumn::make('laboratory.name')
@@ -64,11 +69,11 @@ class BookingResource extends Resource
                     ->searchable()
                     ->badge()
                     ->color(
-                        fn (Schedule $record): string => $record->booking->where('status', 'approved')->isNotEmpty() ? 'gray' : 'success'
+                        fn (Schedule $record): string => $record->booking_count > 0 ? 'gray' : 'success'
                     )
                     ->formatStateUsing(
                         fn (Schedule $record) => $record->laboratory->name.
-                          ($record->booking->where('status', 'approved')->isNotEmpty() ? ' (Ocupado)' : ' (Libre)')
+                          ($record->booking_count > 0 ? ' (Ocupado)' : ' (Libre)')
                     ),
 
                 TextColumn::make('start_at')
@@ -89,9 +94,8 @@ class BookingResource extends Resource
                 TableAction::make('reservar')
                     ->label('Reservar')
                     ->button()
-                  // ✅ CAMBIO 3: El botón solo se desactiva si hay una reserva 'approved'
                     ->disabled(
-                        fn (Schedule $record): bool => $record->booking->where('status', 'approved')->isNotEmpty()
+                        fn (Schedule $record): bool => $record->booking_count > 0
                     )
                     ->modalHeading('Solicitud de Reserva')
                     ->modalWidth('lg')
@@ -141,21 +145,32 @@ class BookingResource extends Resource
                             Select::make('applicants')
                                 ->label('Nombre de los solicitantes')
                                 ->multiple()->searchable()
-                                ->getSearchResultsUsing(fn (string $search) => User::where('name', 'like', "%{$search}%")->orWhere('last_name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")->limit(13)->get()->mapWithKeys(fn ($user) => [$user->id => "{$user->name} {$user->last_name} - {$user->email}"]))
+                                ->getSearchResultsUsing(fn (string $search) => User::where('name', 'like', "%{$search}%")
+                                    ->orWhere('last_name', 'like', "%{$search}%")
+                                    ->orWhere('email', 'like', "%{$search}%")
+                                    ->limit(20)
+                                    ->get()
+                                    ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} {$user->last_name} - {$user->email}"]))
                                 ->required(),
                             TextInput::make('research_name')
                                 ->label('Nombre de la investigación')->required(),
                             Select::make('advisor')
                                 ->label('Nombre del asesor')
                                 ->searchable()
-                                ->getSearchResultsUsing(fn (string $search) => User::where('name', 'like', "%{$search}%")->orWhere('last_name', 'like', "%{$search}%")->orWhere('email', 'like', "%{$search}%")->limit(16)->get()->mapWithKeys(fn ($user) => [$user->id => "{$user->name} {$user->last_name} - {$user->email}"]))
+                                ->getSearchResultsUsing(fn (string $search) => User::where('name', 'like', "%{$search}%")
+                                    ->orWhere('last_name', 'like', "%{$search}%")
+                                    ->orWhere('email', 'like', "%{$search}%")
+                                    ->limit(20)
+                                    ->get()
+                                    ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} {$user->last_name} - {$user->email}"]))
                                 ->required(),
                         ]),
                         Section::make('Materiales y equipos')->schema([
                             Select::make('products')
                                 ->label('Productos disponibles')
                                 ->multiple()->searchable()
-                                ->options(fn () => Product::with('laboratory')->get()->mapWithKeys(fn ($p) => [$p->id => "{$p->name} — {$p->laboratory->name}"])->toArray())
+                                ->options(fn () => cache()->remember('products-for-booking', 300, fn () => Product::with('laboratory')->get()->mapWithKeys(fn ($p) => [$p->id => "{$p->name} — {$p->laboratory->name}"])->toArray()
+                                ))
                                 ->required(),
                         ]),
                         Section::make('Horario solicitado')->schema([

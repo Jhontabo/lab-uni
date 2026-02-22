@@ -3,56 +3,62 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Laboratory;
-use DB;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Facades\DB;
 
 class BookingByLaboratoryChart extends ChartWidget
 {
     public static function canView(): bool
     {
-        return auth()->user()->hasRole(['ADMIN','COORDINADOR','LABORATORISTA']);
+        return auth()->user()->hasRole(['ADMIN', 'COORDINADOR', 'LABORATORISTA']);
     }
 
     protected static ?string $heading = 'Reservas por laboratorio';
+
     protected static ?string $maxHeight = '300px';
+
     protected static ?int $sort = 3;
 
     public ?int $laboratoryId = null;
 
     protected function getData(): array
     {
-        // Get the laboratory from session if available
-        $this->laboratoryId = session()->get('lab');
+        $cacheKey = 'booking-by-lab-'.($this->laboratoryId ?? 'all');
 
-        // Query to count bookings per laboratory
-        $query = Laboratory::query()
-            ->leftJoin('bookings', 'laboratories.id', '=', 'bookings.id')
-            ->select(
-                'laboratories.name',
-                DB::raw('COUNT(bookings.id) as total_bookings')
-            )
-            ->groupBy('laboratories.id', 'laboratories.name')
-            ->orderBy('total_bookings', 'desc');
+        return cache()->remember($cacheKey, 300, function () {
+            // Get the laboratory from session if available
+            $this->laboratoryId = session()->get('lab');
 
-        // Filter by laboratory if specified
-        if ($this->laboratoryId) {
-            $query->where('laboratories.id', $this->laboratoryId);
-        }
+            // Query to count bookings per laboratory
+            $query = Laboratory::query()
+                ->leftJoin('bookings', 'laboratories.id', '=', 'bookings.laboratory_id')
+                ->select(
+                    'laboratories.name',
+                    DB::raw('COUNT(bookings.id) as total_bookings')
+                )
+                ->groupBy('laboratories.id', 'laboratories.name')
+                ->orderBy('total_bookings', 'desc');
 
-        $data = $query->get();
+            // Filter by laboratory if specified
+            if ($this->laboratoryId) {
+                $query->where('laboratories.id', $this->laboratoryId);
+            }
 
-        return [
-            'labels' => $data->pluck('name')->toArray(),
-            'datasets' => [
-                [
-                    'label' => 'Total reservas',
-                    'data' => $data->pluck('total_bookings')->toArray(),
-                    'backgroundColor' => $this->generateColors($data->count()),
-                    'borderColor' => '#ffffff',
-                    'borderWidth' => 1,
+            $data = $query->get();
+
+            return [
+                'labels' => $data->pluck('name')->toArray(),
+                'datasets' => [
+                    [
+                        'label' => 'Total reservas',
+                        'data' => $data->pluck('total_bookings')->toArray(),
+                        'backgroundColor' => $this->generateColors($data->count()),
+                        'borderColor' => '#ffffff',
+                        'borderWidth' => 1,
+                    ],
                 ],
-            ],
-        ];
+            ];
+        });
     }
 
     protected function getType(): string

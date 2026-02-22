@@ -7,7 +7,6 @@ use App\Models\Laboratory;
 use Carbon\Carbon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Card;
-use Illuminate\Support\Facades\DB;
 
 class LabOccupationStatsWidget extends BaseWidget
 {
@@ -18,43 +17,47 @@ class LabOccupationStatsWidget extends BaseWidget
 
     protected function getCards(): array
     {
-        $now = Carbon::now();
-        $startOfMonth = $now->copy()->startOfMonth();
-        $startOfLastMonth = $now->copy()->subMonth()->startOfMonth();
-        $endOfLastMonth = $now->copy()->subMonth()->endOfMonth();
+        $cacheKey = 'lab-occupation-'.now()->format('Y-m');
 
-        // 1. Ocupación actual - Método más confiable
-        $currentOccupancy = $this->getOccupancyRate($startOfMonth, $now);
-        $lastMonthOccupancy = $this->getOccupancyRate($startOfLastMonth, $endOfLastMonth);
-        $occupancyTrend = $this->calculateTrend($currentOccupancy, $lastMonthOccupancy);
+        return cache()->remember($cacheKey, 300, function () {
+            $now = Carbon::now();
+            $startOfMonth = $now->copy()->startOfMonth();
+            $startOfLastMonth = $now->copy()->subMonth()->startOfMonth();
+            $endOfLastMonth = $now->copy()->subMonth()->endOfMonth();
 
-        // 2. Laboratorio más ocupado
-        $mostActiveLab = Laboratory::withCount(['bookings' => function ($query) use ($startOfMonth, $now) {
-            $query->whereBetween('start_at', [$startOfMonth, $now])
-                  ->where('status', 'approved');
-        }])->orderByDesc('bookings_count')->first();
+            // 1. Ocupación actual - Método más confiable
+            $currentOccupancy = $this->getOccupancyRate($startOfMonth, $now);
+            $lastMonthOccupancy = $this->getOccupancyRate($startOfLastMonth, $endOfLastMonth);
+            $occupancyTrend = $this->calculateTrend($currentOccupancy, $lastMonthOccupancy);
 
-        // 3. Horas reservadas - Método alternativo 100% funcional
-        $currentHours = $this->calculateApprovedHours($startOfMonth, $now);
-        $lastMonthHours = $this->calculateApprovedHours($startOfLastMonth, $endOfLastMonth);
-        $hoursTrend = $this->calculateTrend($currentHours, $lastMonthHours);
+            // 2. Laboratorio más ocupado
+            $mostActiveLab = Laboratory::withCount(['bookings' => function ($query) use ($startOfMonth, $now) {
+                $query->whereBetween('start_at', [$startOfMonth, $now])
+                    ->where('status', 'approved');
+            }])->orderByDesc('bookings_count')->first();
 
-        return [
-            Card::make('Tasa de ocupación actual', round($currentOccupancy, 1).'%')
-                ->description($this->getTrendDescription($occupancyTrend))
-                ->descriptionIcon($this->getTrendIcon($occupancyTrend))
-                ->chart($this->getWeeklyOccupancyData())
-                ->color($this->getTrendColor($occupancyTrend)),
+            // 3. Horas reservadas - Método alternativo 100% funcional
+            $currentHours = $this->calculateApprovedHours($startOfMonth, $now);
+            $lastMonthHours = $this->calculateApprovedHours($startOfLastMonth, $endOfLastMonth);
+            $hoursTrend = $this->calculateTrend($currentHours, $lastMonthHours);
 
-            Card::make('Laboratorio más activo', $mostActiveLab?->name ?? 'N/A')
-                ->description($mostActiveLab ? $mostActiveLab->bookings_count.' reservas' : '')
-                ->color('warning'),
+            return [
+                Card::make('Tasa de ocupación actual', round($currentOccupancy, 1).'%')
+                    ->description($this->getTrendDescription($occupancyTrend))
+                    ->descriptionIcon($this->getTrendIcon($occupancyTrend))
+                    ->chart($this->getWeeklyOccupancyData())
+                    ->color($this->getTrendColor($occupancyTrend)),
 
-            Card::make('Horas reservadas (aprobadas)', round($currentHours, 1).'h')
-                ->description($this->getTrendDescription($hoursTrend))
-                ->descriptionIcon($this->getTrendIcon($hoursTrend))
-                ->color($this->getTrendColor($hoursTrend)),
-        ];
+                Card::make('Laboratorio más activo', $mostActiveLab?->name ?? 'N/A')
+                    ->description($mostActiveLab ? $mostActiveLab->bookings_count.' reservas' : '')
+                    ->color('warning'),
+
+                Card::make('Horas reservadas (aprobadas)', round($currentHours, 1).'h')
+                    ->description($this->getTrendDescription($hoursTrend))
+                    ->descriptionIcon($this->getTrendIcon($hoursTrend))
+                    ->color($this->getTrendColor($hoursTrend)),
+            ];
+        });
     }
 
     /**
@@ -91,6 +94,7 @@ class LabOccupationStatsWidget extends BaseWidget
             $end = Carbon::now()->subWeeks($weeks)->endOfWeek();
             $data[] = $this->getOccupancyRate($start, $end);
         }
+
         return $data;
     }
 

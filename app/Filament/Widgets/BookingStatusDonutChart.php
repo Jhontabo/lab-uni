@@ -10,35 +10,39 @@ class BookingStatusDonutChart extends ChartWidget
 {
     public static function canView(): bool
     {
-        return auth()->user()->hasRole(['ADMIN','COORDINADOR','LABORATORISTA']);
+        return auth()->user()->hasRole(['ADMIN', 'COORDINADOR', 'LABORATORISTA']);
     }
 
     protected static ?string $heading = 'Reservas por estado';
+
     protected static ?string $maxHeight = '300px';
+
     protected static ?int $sort = 2;
 
     protected function getData(): array
     {
-        $data = Booking::query()
-            ->select('status', DB::raw('COUNT(*) as total'))
-            ->groupBy('status')
-            ->orderBy('total', 'desc')
-            ->get();
+        return cache()->remember('booking-status-chart', 300, function () {
+            $data = Booking::query()
+                ->select('status', DB::raw('COUNT(*) as total'))
+                ->groupBy('status')
+                ->orderBy('total', 'desc')
+                ->get();
 
-        $totalBookings = $data->sum('total');
+            $totalBookings = $data->sum('total');
 
-        return [
-            'labels' => $data->pluck('status')->map(fn ($status) => strtoupper($status))->toArray(),
-            'datasets' => [
-                [
-                    'label' => 'Total Bookings',
-                    'data' => $data->pluck('total')->toArray(),
-                    'backgroundColor' => $this->generateColors($data->count()),
-                    'borderColor' => '#ffffff',
-                    'borderWidth' => 1,
+            return [
+                'labels' => $data->pluck('status')->map(fn ($status) => strtoupper($status))->toArray(),
+                'datasets' => [
+                    [
+                        'label' => 'Total Bookings',
+                        'data' => $data->pluck('total')->toArray(),
+                        'backgroundColor' => $this->generateColors($data->count()),
+                        'borderColor' => '#ffffff',
+                        'borderWidth' => 1,
+                    ],
                 ],
-            ],
-        ];
+            ];
+        });
     }
 
     protected function getType(): string
