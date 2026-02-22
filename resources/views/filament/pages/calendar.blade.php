@@ -1,12 +1,11 @@
 <x-filament-panels::page>
-    <!-- Container with flexbox to align the title and the dropdown -->
-    <div class="flex items-center justify-between mb-4">
-        <!-- Title -->
-
-        <!-- Dropdown to select the widget -->
+    <div class="flex items-center justify-end mb-4">
         <form method="GET" action="{{ url()->current() }}">
             <select name="laboratory" onchange="this.form.submit()"
-                class="form-control border-gray-300 rounded-md shadow-sm bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200">
+                class="fi-select-input block w-full rounded-lg border-gray-300 shadow-sm transition duration-75
+                       focus:border-primary-500 focus:ring-1 focus:ring-inset focus:ring-primary-500
+                       dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 dark:focus:border-primary-500
+                       text-sm py-2 px-3">
                 @foreach ($this->getDropdownOptions() as $key => $label)
                     <option value="{{ $key }}"
                         {{ request()->query('laboratory', 'All') === (string) $key ? 'selected' : '' }}>
