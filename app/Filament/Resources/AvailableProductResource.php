@@ -48,25 +48,30 @@ class AvailableProductResource extends Resource
         return $table
             ->columns([
                 ImageColumn::make('image')
-                    ->label('Imagen')
-                    ->size(50)
+                    ->label('')
+                    ->size(60)
                     ->circular()
                     ->toggleable(),
 
                 TextColumn::make('name')
-                    ->label('Producto')
+                    ->label('Equipo')
                     ->searchable()
                     ->sortable()
-                    ->description(fn ($record) => substr($record->description, 0, 50).'...')
                     ->weight('medium')
+                    ->description(fn ($record) => $record->laboratory->name ?? 'Sin laboratorio', 'below')
                     ->color('primary'),
 
                 TextColumn::make('available_quantity')
-                    ->label('Cantidad disponible')
+                    ->label('Disponibles')
                     ->sortable()
                     ->alignCenter()
-                    ->color(fn ($record) => $record->available_quantity > 10 ? 'success' : ($record->available_quantity > 0 ? 'warning' : 'danger'))
-                    ->icon(fn ($record) => $record->available_quantity > 10 ? 'heroicon-o-check-circle' : ($record->available_quantity > 0 ? 'heroicon-o-exclamation-circle' : 'heroicon-o-x-circle')),
+                    ->badge()
+                    ->color(fn ($record) => match (true) {
+                        $record->available_quantity <= 0 => 'danger',
+                        $record->available_quantity < 5 => 'warning',
+                        default => 'success',
+                    })
+                    ->formatStateUsing(fn ($state) => "{$state} uds"),
 
                 TextColumn::make('product_type')
                     ->label('Tipo')
@@ -82,35 +87,39 @@ class AvailableProductResource extends Resource
                         default => ucfirst($state),
                     })
                     ->sortable(),
-
-                TextColumn::make('laboratory.name')
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('laboratory_id')
                     ->label('Laboratorio')
-                    ->sortable()
-                    ->searchable()
-                    ->toggleable(),
+                    ->options(fn () => \App\Models\Laboratory::all()->pluck('name', 'id'))
+                    ->searchable(),
             ])
             ->actions([
                 Tables\Actions\ViewAction::make()
-                    ->label('Ver')
+                    ->label('Ver detalles')
                     ->icon('heroicon-o-eye')
-                    ->modalHeading(fn ($record) => "Detalles del producto: {$record->name}")
+                    ->modalHeading(fn ($record) => $record->name)
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Cerrar')
                     ->modalContent(fn ($record) => view('filament.pages.view-AvailableProduct', ['product' => $record])),
 
                 Tables\Actions\Action::make('requestLoan')
-                    ->label('Solicitar')
+                    ->label('Solicitar Préstamo')
                     ->icon('heroicon-o-clipboard-document-list')
+                    ->button()
+                    ->color('primary')
                     ->requiresConfirmation()
                     ->modalHeading('Confirmar solicitud')
-                    ->modalDescription(fn (AvailableProduct $record) => "¿Confirma la solicitud del producto '{$record->name}'?")
+                    ->modalDescription(fn (AvailableProduct $record) => "¿Confirma la solicitud del producto '{$record->name}'?\n\n".
+                        "Cantidad disponible: {$record->available_quantity} unidades"
+                    )
                     ->action(function (AvailableProduct $record) {
                         // Validar cantidad mínima
                         if ($record->available_quantity < 5) {
                             Notification::make()
-                                ->title("{$record->name}: cantidad insuficiente")
+                                ->title('Cantidad insuficiente')
                                 ->body('Debe haber al menos 5 unidades disponibles para solicitar este producto.')
-                                ->danger()
+                                ->warning()
                                 ->send();
 
                             return;
@@ -124,9 +133,9 @@ class AvailableProductResource extends Resource
                         ]);
 
                         Notification::make()
-                            ->title('Solicitud registrada')
+                            ->title('Solicitud enviada')
                             ->success()
-                            ->body("Producto solicitado: {$record->name}")
+                            ->body("Tu solicitud para {$record->name} está siendo procesada. Te notificaremos cuando sea aprobada.")
                             ->send();
                     }),
             ])

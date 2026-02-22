@@ -12,7 +12,6 @@ use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class LoanManagementResource extends Resource
@@ -40,7 +39,14 @@ class LoanManagementResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('user_id', Auth::id())->count();
+        return static::getModel()::where('status', 'pending')->count() ?: null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        $pending = static::getModel()::where('status', 'pending')->count();
+
+        return $pending > 0 ? 'warning' : 'success';
     }
 
     public static function getEloquentQuery(): Builder
@@ -166,26 +172,27 @@ class LoanManagementResource extends Resource
                     ->label('Aprobar')
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
+                    ->button()
+                    ->size('sm')
                     ->modalHeading('Aprobar Préstamo')
                     ->modalDescription('Confirma la aprobación de este préstamo.')
                     ->form([
                         Forms\Components\DatePicker::make('estimated_return_at')
-                            ->label('Fecha estimada de devolución')
+                            ->label('Fecha de devolución')
                             ->required()
                             ->minDate(now()->addDay())
                             ->default(now()->addWeek())
-                            ->displayFormat('d M Y')
-                            ->disabled(),
+                            ->displayFormat('d M Y'),
                     ])
                     ->action(function (Loan $record) {
                         DB::transaction(function () use ($record) {
                             $product = $record->product;
 
-                            if ($product->available_quantity < 1) {
+                            if (! $product || $product->available_quantity < 1) {
                                 Notification::make()
                                     ->danger()
-                                    ->title('Error en aprobación')
-                                    ->body('No hay unidades disponibles para este producto.')
+                                    ->title('Error')
+                                    ->body('No hay unidades disponibles.')
                                     ->send();
 
                                 return;
@@ -200,7 +207,6 @@ class LoanManagementResource extends Resource
                             ]);
 
                             $product->decrement('available_quantity');
-                            $product->update(['available_for_loan' => $product->available_quantity >= 1]);
 
                             Notification::make()
                                 ->success()
@@ -209,8 +215,8 @@ class LoanManagementResource extends Resource
                                 ->send();
 
                             Notification::make()
-                                ->title('¡Préstamo Aprobado! 🎉')
-                                ->body("Tu solicitud para el equipo {$product->name} ha sido aprobada. Fecha límite de devolución: ".$estimatedReturnDate->format('d/m/Y'))
+                                ->title('Préstamo Aprobado')
+                                ->body("Tu solicitud para {$product->name} ha sido aprobada.")
                                 ->success()
                                 ->icon('heroicon-o-check-circle')
                                 ->sendToDatabase($record->user);
@@ -222,6 +228,8 @@ class LoanManagementResource extends Resource
                     ->label('Rechazar')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
+                    ->button()
+                    ->size('sm')
                     ->modalHeading('Rechazar Préstamo')
                     ->requiresConfirmation()
                     ->action(function (Loan $record) {
@@ -233,8 +241,8 @@ class LoanManagementResource extends Resource
                             ->send();
 
                         Notification::make()
-                            ->title('Préstamo Rechazado ❌')
-                            ->body("Tu solicitud para el equipo {$record->product->name} ha sido rechazada.")
+                            ->title('Préstamo Rechazado')
+                            ->body("Tu solicitud para {$record->product->name} ha sido rechazada.")
                             ->danger()
                             ->icon('heroicon-o-x-circle')
                             ->sendToDatabase($record->user);
@@ -242,9 +250,11 @@ class LoanManagementResource extends Resource
                     ->visible(fn (Loan $record) => $record->status === 'pending'),
 
                 Tables\Actions\Action::make('return')
-                    ->label('Marcar como Devuelto')
+                    ->label('Devuelto')
                     ->icon('heroicon-o-archive-box-arrow-down')
                     ->color('info')
+                    ->button()
+                    ->size('sm')
                     ->modalHeading('Registrar Devolución')
                     ->requiresConfirmation()
                     ->action(function (Loan $record) {
