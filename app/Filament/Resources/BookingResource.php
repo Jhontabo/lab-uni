@@ -9,7 +9,7 @@ use App\Models\Product;
 use App\Models\Schedule;
 use App\Models\User;
 use Carbon\Carbon;
-use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Radio;
@@ -121,73 +121,104 @@ class BookingResource extends Resource
                         fn (Schedule $record): bool => $record->booking_count > 0
                     )
                     ->modalHeading('Solicitud de Reserva')
-                    ->modalWidth('lg')
+                    ->modalDescription('Completa los datos para solicitar este espacio.')
+                    ->modalWidth('2xl')
                     ->form([
-                        // Tu formulario no cambia...
-                        Section::make('Detalles de la práctica')->schema([
-                            Radio::make('project_type')
-                                ->label('Tipo de proyecto')
-                                ->options([
-                                    'Trabajo de grado' => 'Trabajo de grado',
-                                    'Investigación profesoral' => 'Investigación profesoral',
-                                ])->columns(5)->required(),
-                            Placeholder::make('laboratory_display')
-                                ->label('Espacio académico')
-                                ->content(fn (Schedule $record) => $record->laboratory->name ?? 'No asignado'),
-                            Hidden::make('laboratory_id')
-                                ->default(fn (Schedule $record) => $record->laboratory_id)->required(),
+                        Section::make('Espacio y horario seleccionado')
+                            ->icon('heroicon-o-calendar-days')
+                            ->collapsed(false)
+                            ->compact()
+                            ->schema([
+                                Hidden::make('laboratory_id')
+                                    ->default(fn (Schedule $record) => $record->laboratory_id)
+                                    ->required(),
+                                Hidden::make('start_at')
+                                    ->default(fn (Schedule $record) => $record->start_at),
+                                Hidden::make('end_at')
+                                    ->default(fn (Schedule $record) => $record->end_at),
+                                Grid::make(3)->schema([
+                                    Placeholder::make('laboratory_display')
+                                        ->label('Espacio académico')
+                                        ->content(fn (Schedule $record) => $record->laboratory->name ?? 'No asignado'),
+                                    Placeholder::make('start_display')
+                                        ->label('Inicio')
+                                        ->content(fn (Schedule $record) => Carbon::parse($record->start_at)->locale('es')->translatedFormat('D d M Y - g:i A')),
+                                    Placeholder::make('end_display')
+                                        ->label('Fin')
+                                        ->content(fn (Schedule $record) => Carbon::parse($record->end_at)->locale('es')->translatedFormat('D d M Y - g:i A')),
+                                ]),
+                            ]),
 
-                            Select::make('academic_program')
-                                ->label('Programa académico')
-                                ->options(fn () => AcademicProgram::where('is_active', true)
-                                    ->orderBy('name')
-                                    ->pluck('name', 'name'))
-                                ->searchable()
-                                ->preload()
-                                ->required(),
+                        Section::make('Información del proyecto')
+                            ->icon('heroicon-o-academic-cap')
+                            ->schema([
+                                Radio::make('project_type')
+                                    ->label('Tipo de proyecto')
+                                    ->options([
+                                        'Trabajo de grado' => 'Trabajo de grado',
+                                        'Investigación profesoral' => 'Investigación profesoral',
+                                    ])
+                                    ->inline()
+                                    ->required(),
+                                Grid::make(2)->schema([
+                                    Select::make('academic_program')
+                                        ->label('Programa académico')
+                                        ->options(fn () => AcademicProgram::where('is_active', true)
+                                            ->orderBy('name')
+                                            ->pluck('name', 'name'))
+                                        ->searchable()
+                                        ->preload()
+                                        ->required(),
+                                    Select::make('semester')
+                                        ->label('Semestre')
+                                        ->options(array_combine(range(1, 10), range(1, 10)))
+                                        ->required(),
+                                ]),
+                                TextInput::make('research_name')
+                                    ->label('Nombre de la investigación')
+                                    ->placeholder('Ej: Análisis de muestras de suelo')
+                                    ->required(),
+                            ]),
 
-                            Select::make('semester')
-                                ->label('Semestre')
-                                ->options(array_combine(range(1, 10), range(1, 10)))->required(),
-                            Select::make('applicants')
-                                ->label('Nombre de los solicitantes')
-                                ->multiple()->searchable()
-                                ->getSearchResultsUsing(fn (string $search) => User::where('name', 'like', "%{$search}%")
-                                    ->orWhere('last_name', 'like', "%{$search}%")
-                                    ->orWhere('email', 'like', "%{$search}%")
-                                    ->limit(20)
-                                    ->get()
-                                    ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} {$user->last_name} - {$user->email}"]))
-                                ->required(),
-                            TextInput::make('research_name')
-                                ->label('Nombre de la investigación')->required(),
-                            Select::make('advisor')
-                                ->label('Nombre del asesor')
-                                ->searchable()
-                                ->getSearchResultsUsing(fn (string $search) => User::where('name', 'like', "%{$search}%")
-                                    ->orWhere('last_name', 'like', "%{$search}%")
-                                    ->orWhere('email', 'like', "%{$search}%")
-                                    ->limit(20)
-                                    ->get()
-                                    ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} {$user->last_name} - {$user->email}"]))
-                                ->required(),
-                        ]),
-                        Section::make('Materiales y equipos')->schema([
-                            Select::make('products')
-                                ->label('Productos disponibles')
-                                ->multiple()->searchable()
-                                ->options(fn () => cache()->remember('products-for-booking', 300, fn () => Product::with('laboratory')->get()->mapWithKeys(fn ($p) => [$p->id => "{$p->name} — {$p->laboratory->name}"])->toArray()
-                                ))
-                                ->required(),
-                        ]),
-                        Section::make('Horario solicitado')->schema([
-                            DateTimePicker::make('start_at')
-                                ->label('Inicio')
-                                ->default(fn (Schedule $record) => $record->start_at)->readOnly(),
-                            DateTimePicker::make('end_at')
-                                ->label('Fin')
-                                ->default(fn (Schedule $record) => $record->end_at)->after('start_at')->readOnly(),
-                        ]),
+                        Section::make('Participantes')
+                            ->icon('heroicon-o-user-group')
+                            ->schema([
+                                Select::make('applicants')
+                                    ->label('Solicitantes')
+                                    ->helperText('Busca por nombre, apellido o correo.')
+                                    ->multiple()
+                                    ->searchable()
+                                    ->getSearchResultsUsing(fn (string $search) => User::where('name', 'like', "%{$search}%")
+                                        ->orWhere('last_name', 'like', "%{$search}%")
+                                        ->orWhere('email', 'like', "%{$search}%")
+                                        ->limit(20)
+                                        ->get()
+                                        ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} {$user->last_name} - {$user->email}"]))
+                                    ->required(),
+                                Select::make('advisor')
+                                    ->label('Asesor')
+                                    ->helperText('Busca por nombre, apellido o correo.')
+                                    ->searchable()
+                                    ->getSearchResultsUsing(fn (string $search) => User::where('name', 'like', "%{$search}%")
+                                        ->orWhere('last_name', 'like', "%{$search}%")
+                                        ->orWhere('email', 'like', "%{$search}%")
+                                        ->limit(20)
+                                        ->get()
+                                        ->mapWithKeys(fn ($user) => [$user->id => "{$user->name} {$user->last_name} - {$user->email}"]))
+                                    ->required(),
+                            ]),
+
+                        Section::make('Materiales y equipos')
+                            ->icon('heroicon-o-beaker')
+                            ->schema([
+                                Select::make('products')
+                                    ->label('Productos requeridos')
+                                    ->helperText('Selecciona los materiales o equipos que necesitas.')
+                                    ->multiple()
+                                    ->searchable()
+                                    ->options(fn () => cache()->remember('products-for-booking', 300, fn () => Product::with('laboratory')->get()->mapWithKeys(fn ($p) => [$p->id => "{$p->name} — {$p->laboratory->name}"])->toArray()))
+                                    ->required(),
+                            ]),
                     ])
                     ->action(function (Schedule $record, array $data): void {
                         $user = Auth::user();
