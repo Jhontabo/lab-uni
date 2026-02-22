@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\ReservationHistorysResource\Pages;
 
 use App\Filament\Resources\ReservationHistorysResource;
-use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
 class ListReservationHistories extends ListRecords
@@ -12,8 +11,6 @@ class ListReservationHistories extends ListRecords
 
     protected function getHeaderActions(): array
     {
-        return [
-            Actions\CreateAction::make(),
-        ];
+        return [];
     }
 }

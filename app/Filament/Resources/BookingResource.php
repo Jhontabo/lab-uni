@@ -225,7 +225,6 @@ class BookingResource extends Resource
                         $applicantNames = User::whereIn('id', $data['applicants'])->get()->map(fn ($user) => "{$user->name} {$user->last_name}")->implode(', ');
                         $advisorUser = User::find($data['advisor']);
                         $advisorName = $advisorUser ? "{$advisorUser->name} {$advisorUser->last_name}" : '';
-                        $productsJson = json_encode($data['products']);
                         Booking::create([
                             'schedule_id' => $record->id,
                             'user_id' => $user->id,
@@ -239,7 +238,7 @@ class BookingResource extends Resource
                             'applicants' => $applicantNames,
                             'research_name' => $data['research_name'],
                             'advisor' => $advisorName,
-                            'products' => $productsJson,
+                            'products' => $data['products'],
                             'start_at' => $data['start_at'],
                             'end_at' => $data['end_at'],
                             'status' => Booking::STATUS_PENDING,

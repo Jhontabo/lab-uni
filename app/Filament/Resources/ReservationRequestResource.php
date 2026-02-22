@@ -208,7 +208,14 @@ class ReservationRequestResource extends Resource
     {
         $productNames = [];
         if (! empty($record->products)) {
-            $ids = is_array($record->products) ? $record->products : explode(',', $record->products);
+            $raw = $record->products;
+            if (is_string($raw)) {
+                $decoded = json_decode($raw, true);
+                $ids = is_array($decoded) ? $decoded : explode(',', $raw);
+            } else {
+                $ids = (array) $raw;
+            }
+            $ids = array_filter(array_map('intval', $ids));
             $productNames = Product::whereIn('id', $ids)->pluck('name')->toArray();
         }
 
