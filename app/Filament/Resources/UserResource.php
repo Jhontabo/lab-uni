@@ -6,30 +6,35 @@ use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Wizard;
+use Filament\Forms\Components\Wizard\Step;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+// Necesario para hashear contraseñas
+// Necesario para lógica condicional en formularios
+use Illuminate\Database\Eloquent\Model; // Para agrupar campos visualmente
 use Illuminate\Support\Collection;
-use Filament\Notifications\Notification;
-use Filament\Tables\Actions\Action;
-use Filament\Tables\Actions\BulkAction;
-use Filament\Forms\Components\Wizard;
-use Illuminate\Support\Facades\Hash; // Necesario para hashear contraseñas
-use Filament\Forms\Get; // Necesario para lógica condicional en formularios
-use Filament\Forms\Components\Section; // Para agrupar campos visualmente
-use Filament\Forms\Components\Wizard\Step;
 
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-users';
+
     protected static ?string $modelLabel = 'Usuario';
+
     protected static ?string $pluralModelLabel = 'Usuarios';
 
     protected static ?string $navigationGroup = 'Administracion';
+
     protected static ?int $navigationSort = 1;
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::count();
@@ -149,7 +154,7 @@ class UserResource extends Resource
                 ])
                     ->columnSpanFull() // Asegura que el Wizard ocupe todo el ancho
                     ->persistStepInQueryString() // Mantiene el paso actual en la URL
-                    ->skippable()
+                    ->skippable(),
             ]);
     }
 
@@ -177,8 +182,8 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('roles.name')
                     ->label('Roles')
                     ->badge() // Muestra los roles como badges
-                    ->formatStateUsing(fn($state) => ucwords($state)) // Capitaliza el nombre del rol
-                    ->color(fn(string $state): string => match (strtolower($state)) { // Colores dinámicos para roles (ejemplo)
+                    ->formatStateUsing(fn ($state) => ucwords($state)) // Capitaliza el nombre del rol
+                    ->color(fn (string $state): string => match (strtolower($state)) { // Colores dinámicos para roles (ejemplo)
                         'admin' => 'danger',
                         'editor' => 'warning',
                         'user' => 'success',
@@ -199,13 +204,13 @@ class UserResource extends Resource
 
                         Notification::make()
                             ->title('Estado actualizado')
-                            ->body("El usuario ahora está " . ($state ? 'activo' : 'inactivo'))
+                            ->body('El usuario ahora está '.($state ? 'activo' : 'inactivo'))
                             ->success()
                             ->send();
 
                         return $state;
                     })
-                    ->getStateUsing(fn($record): bool => $record->status === 'active'),
+                    ->getStateUsing(fn ($record): bool => $record->status === 'active'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creado')
                     ->dateTime('d/m/Y H:i')
@@ -238,13 +243,13 @@ class UserResource extends Resource
                         return $query
                             ->when(
                                 $data['created_from'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
                             )
                             ->when(
                                 $data['created_until'],
-                                fn(Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
-                    })
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
@@ -260,7 +265,7 @@ class UserResource extends Resource
                         ->color('success')
                         ->action(function (Collection $records): void {
                             $records->each->update(['status' => true]);
-                            Notification::make()->title(count($records) . ' Usuarios Activados')->success()->send();
+                            Notification::make()->title(count($records).' Usuarios Activados')->success()->send();
                         })
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion(),
@@ -270,7 +275,7 @@ class UserResource extends Resource
                         ->color('danger')
                         ->action(function (Collection $records): void {
                             $records->each->update(['status' => false]);
-                            Notification::make()->title(count($records) . ' Usuarios Desactivados')->success()->send();
+                            Notification::make()->title(count($records).' Usuarios Desactivados')->success()->send();
                         })
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion(),

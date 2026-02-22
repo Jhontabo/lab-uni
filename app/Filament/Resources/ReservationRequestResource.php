@@ -24,6 +24,8 @@ class ReservationRequestResource extends Resource
 {
     protected static ?string $model = Booking::class;
 
+    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
+
     protected static ?string $navigationLabel = 'Solicitud de reserva';
 
     protected static ?string $navigationGroup = 'Gestion de Reservas';

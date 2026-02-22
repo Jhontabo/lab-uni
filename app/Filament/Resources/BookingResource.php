@@ -28,7 +28,7 @@ class BookingResource extends Resource
 {
     protected static ?string $model = Schedule::class;
 
-    // protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
+    protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
 
     protected static ?string $modelLabel = 'Reserva de Espacio';
 

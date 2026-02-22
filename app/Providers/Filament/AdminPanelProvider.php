@@ -38,20 +38,13 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make()
-                    ->label('Prestamos')
-                    ->icon('heroicon-o-clipboard-document-list'),
+                    ->label('Prestamos'),
                 NavigationGroup::make()
-                    ->label('Gestion de Reservas')
-                    ->icon('heroicon-o-calendar-days'),
+                    ->label('Gestion de Reservas'),
                 NavigationGroup::make()
-                    ->label('Administracion')
-                    ->icon('heroicon-o-user-group'),
+                    ->label('Administracion'),
                 NavigationGroup::make()
-                    ->label('Inventario')
-                    ->icon('heroicon-o-cube'),
-                NavigationGroup::make()
-                    ->label('Laboratorios')
-                    ->icon('heroicon-o-beaker'),
+                    ->label('Configuracion'),
             ])
 
             // ->plugin(FilamentSpatieRolesPermissionsPlugin::make())

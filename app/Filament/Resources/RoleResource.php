@@ -4,27 +4,31 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\RoleResource\Pages;
 use App\Models\Role;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
-use Filament\Tables;
-use Filament\Tables\Table;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\Section;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Support\Enums\FontWeight;
+use Filament\Tables;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Table;
 
 class RoleResource extends Resource
 {
     protected static ?string $model = Role::class;
 
+    protected static ?string $navigationIcon = 'heroicon-o-key';
 
     protected static ?string $navigationGroup = 'Administracion';
-    protected static ?int $navigationSort = 2;
-    protected static ?string $navigationLabel = 'Roles';
-    protected static ?string $modelLabel = 'Rol';
-    protected static ?string $pluralModelLabel = 'Roles';
 
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $navigationLabel = 'Roles';
+
+    protected static ?string $modelLabel = 'Rol';
+
+    protected static ?string $pluralModelLabel = 'Roles';
 
     public static function getNavigationBadge(): ?string
     {
@@ -45,7 +49,7 @@ class RoleResource extends Resource
                         ->required()
                         ->unique(ignoreRecord: true)
                         ->maxLength(255)
-                        ->afterStateUpdated(fn($state, $set) => $set('name', strtoupper($state)))
+                        ->afterStateUpdated(fn ($state, $set) => $set('name', strtoupper($state)))
                         ->columnSpanFull(),
                 ]),
 
@@ -77,14 +81,14 @@ class RoleResource extends Resource
                     ->sortable()
                     ->searchable()
                     ->weight(FontWeight::Bold)
-                    ->formatStateUsing(fn($state) => strtoupper($state))
-                    ->description(fn(Role $record) => $record->permissions->count() . ' permisos asignados'),
+                    ->formatStateUsing(fn ($state) => strtoupper($state))
+                    ->description(fn (Role $record) => $record->permissions->count().' permisos asignados'),
 
                 TextColumn::make('permissions_count')
                     ->label('Permisos')
                     ->counts('permissions')
                     ->badge()
-                    ->color(fn(int $state): string => match (true) {
+                    ->color(fn (int $state): string => match (true) {
                         $state === 0 => 'gray',
                         $state <= 5 => 'info',
                         $state <= 10 => 'primary',

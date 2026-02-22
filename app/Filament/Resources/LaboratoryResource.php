@@ -17,12 +17,13 @@ class LaboratoryResource extends Resource
 {
     protected static ?string $model = Laboratory::class;
 
-    // protected static ?string $navigationIcon = 'heroicon-o-beaker';
+    protected static ?string $navigationIcon = 'heroicon-o-beaker';
+
     protected static ?string $navigationLabel = 'Laboratorios';
 
-    protected static ?string $navigationGroup = 'Laboratorios';
+    protected static ?string $navigationGroup = 'Configuración';
 
-    protected static ?int $navigationSort = 1;
+    protected static ?int $navigationSort = 100;
 
     protected static ?string $pluralModelLabel = 'Laboratorios';
 
@@ -37,16 +38,19 @@ class LaboratoryResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Informacion del laboratorio')
-                    ->icon('heroicon-o-building-office')
+                Forms\Components\Section::make('Información del Laboratorio')
+                    ->icon('heroicon-o-building-office-2')
+                    ->description('Ingrese los datos básicos del laboratorio')
                     ->schema([
                         Forms\Components\Grid::make(2)
                             ->schema([
                                 Forms\Components\TextInput::make('name')
-                                    ->label('Nombre')
+                                    ->label('Nombre del Laboratorio')
                                     ->required()
                                     ->maxLength(255)
-                                    ->placeholder('Ejemplo. Quimica'),
+                                    ->placeholder('Ej: Laboratorio de Química')
+                                    ->helperText('Nombre oficial del laboratorio')
+                                    ->prefixIcon('heroicon-o-beaker'),
 
                                 Forms\Components\TextInput::make('capacity')
                                     ->label('Capacidad')
@@ -55,48 +59,54 @@ class LaboratoryResource extends Resource
                                     ->minValue(1)
                                     ->maxValue(100)
                                     ->step(1)
-                                    ->placeholder('Ejem. 20')
-                                    ->helperText('Numero maximo de personas'),
+                                    ->placeholder('20')
+                                    ->helperText('Número máximo de personas que pueden estar simultáneamente')
+                                    ->prefixIcon('heroicon-o-users'),
 
                                 Forms\Components\TextInput::make('location')
-                                    ->label('Localizacion')
+                                    ->label('Ubicación')
                                     ->required()
                                     ->maxLength(255)
-                                    ->placeholder('Edificio, Piso, Aula'),
+                                    ->placeholder('Edificio Principal, Piso 2, Aula 201')
+                                    ->helperText('Dirección exacta del laboratorio')
+                                    ->prefixIcon('heroicon-o-map-pin'),
+                            ]),
+                    ]),
 
-                                Select::make('product_ids')
-                                    ->label('Productos asociados')
-                                    ->multiple()
-                                    ->relationship(
-                                        name: 'products',
-                                        titleAttribute: 'name',
-                                        modifyQueryUsing: fn ($query, Model $record) => $query
-                                            ->where('laboratory_id', $record->id)
-                                            ->orWhereNull('laboratory_id')
-                                    )
-                                    ->searchable()
-                                    ->preload()
-                                    ->helperText('Seleccione los productos que estarán disponibles en este laboratorio'),
+                Forms\Components\Section::make('Inventario del Laboratorio')
+                    ->icon('heroicon-o-cube')
+                    ->description('Seleccione los productos/equipos que estarán disponibles en este laboratorio')
+                    ->schema([
+                        Select::make('product_ids')
+                            ->label('Productos y Equipos')
+                            ->multiple()
+                            ->relationship(
+                                name: 'products',
+                                titleAttribute: 'name',
+                                modifyQueryUsing: fn ($query, Model $record) => $query
+                                    ->where('laboratory_id', $record->id)
+                                    ->orWhereNull('laboratory_id')
+                            )
+                            ->searchable()
+                            ->preload()
+                            ->helperText('Seleccione los productos que pertenecerán a este laboratorio'),
+                    ]),
 
-                            ])
-                            ->columns(2),
-                    ])
-                    ->compact(),
-
-                Forms\Components\Section::make('Encargado')
+                Forms\Components\Section::make('Responsable del Laboratorio')
                     ->icon('heroicon-o-user')
+                    ->description('Persona encargada de administrar el laboratorio')
                     ->schema([
                         Forms\Components\Select::make('user_id')
-                            ->label('Laboratorios')
+                            ->label('Encargado')
                             ->options(User::role('LABORATORISTA')->pluck('name', 'id'))
                             ->searchable()
                             ->preload()
                             ->required()
                             ->native(false)
-                            ->placeholder('Selecione un encargado')
-                            ->helperText('Asigne una persona encargada'),
-                    ])
-                    ->compact(),
+                            ->placeholder('Seleccione un encargado')
+                            ->helperText('El encargado será responsable del inventario y préstamos')
+                            ->prefixIcon('heroicon-o-user-circle'),
+                    ]),
             ]);
     }
 
@@ -109,12 +119,13 @@ class LaboratoryResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->weight('medium')
-                    ->description(fn (Laboratory $record) => $record->location),
+                    ->description(fn (Laboratory $record) => $record->location)
+                    ->icon('heroicon-o-beaker'),
 
                 Tables\Columns\TextColumn::make('capacity')
                     ->badge()
                     ->label('Capacidad')
-                    ->formatStateUsing(fn ($state): string => "{$state} people")
+                    ->formatStateUsing(fn ($state): string => "{$state} personas")
                     ->color(fn ($state): string => match (true) {
                         $state > 30 => 'success',
                         $state > 15 => 'warning',
@@ -122,42 +133,56 @@ class LaboratoryResource extends Resource
                     })
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('products_count')
+                    ->label('Productos')
+                    ->counts('products')
+                    ->badge()
+                    ->color('info')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('user.name')
                     ->label('Encargado')
                     ->getStateUsing(fn (Laboratory $record): string => trim($record->user->name.' '.$record->user->last_name))
                     ->sortable()
-                    ->searchable(),
+                    ->searchable()
+                    ->placeholder('Sin asignar'),
+
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Creado')
                     ->dateTime('d/m/Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-
+            ->filters([
+                Tables\Filters\SelectFilter::make('user_id')
+                    ->label('Encargado')
+                    ->options(User::role('LABORATORISTA')->pluck('name', 'id'))
+                    ->searchable(),
+            ])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->icon('heroicon-o-pencil')
                     ->color('primary')
-                    ->tooltip('Edit laboratory'),
+                    ->tooltip('Editar laboratorio'),
 
                 Tables\Actions\DeleteAction::make()
                     ->icon('heroicon-o-trash')
                     ->color('danger')
-                    ->tooltip('Delete laboratory')
+                    ->tooltip('Eliminar laboratorio')
                     ->successNotification(
                         \Filament\Notifications\Notification::make()
                             ->success()
-                            ->title('Laboratory deleted')
-                            ->body('The laboratory was successfully deleted.'),
+                            ->title('Laboratorio eliminado')
+                            ->body('El laboratorio ha sido eliminado correctamente.'),
                     ),
             ])
 
-            ->emptyStateHeading('No laboratories yet')
-            ->emptyStateDescription('Create your first laboratory by clicking the button above')
+            ->emptyStateHeading('No hay laboratorios')
+            ->emptyStateDescription('Crea el primer laboratorio para comenzar')
             ->emptyStateIcon('heroicon-o-beaker')
             ->emptyStateActions([
                 Tables\Actions\CreateAction::make()
-                    ->label('Create laboratory')
+                    ->label('Crear laboratorio')
                     ->icon('heroicon-o-plus'),
             ])
             ->defaultSort('name', 'asc')

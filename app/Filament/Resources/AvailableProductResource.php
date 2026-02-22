@@ -17,7 +17,8 @@ class AvailableProductResource extends Resource
 {
     protected static ?string $model = AvailableProduct::class;
 
-    // protected static ?string $navigationIcon = 'heroicon-m-shopping-cart';
+    protected static ?string $navigationIcon = 'heroicon-o-shopping-cart';
+
     protected static ?string $navigationGroup = 'Prestamos';
 
     protected static ?string $navigationLabel = 'Solicitar préstamo';

@@ -21,6 +21,8 @@ class ReservationHistorysResource extends Resource
 {
     protected static ?string $model = Booking::class;
 
+    protected static ?string $navigationIcon = 'heroicon-o-clock';
+
     protected static ?string $navigationLabel = 'Mis Reservas';
 
     protected static ?string $navigationGroup = 'Gestion de Reservas';
