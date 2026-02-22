@@ -10,7 +10,7 @@ class Laboratory extends Model
 {
     use HasFactory;
 
-    protected $table = 'laboratories'; // ✅ Nombre de la tabla en inglés plural
+    protected $table = 'laboratories';
 
     protected $fillable = [
         'name',
@@ -19,13 +19,29 @@ class Laboratory extends Model
         'user_id',
     ];
 
-    // Relaciones
-    public function equipments()
+    public function setAttribute($key, $value)
     {
-        return $this->hasMany(Equipment::class, 'laboratory_id');
+        if ($key === 'product_ids') {
+            return;
+        }
+
+        return parent::setAttribute($key, $value);
     }
 
-    public function products()
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::saved(function ($model) {
+            $productIds = request()->input('product_ids', []);
+            if (! empty($productIds)) {
+                Product::where('laboratory_id', $model->id)->update(['laboratory_id' => null]);
+                Product::whereIn('id', $productIds)->update(['laboratory_id' => $model->id]);
+            }
+        });
+    }
+
+    public function products(): HasMany
     {
         return $this->hasMany(Product::class, 'laboratory_id');
     }
@@ -35,10 +51,9 @@ class Laboratory extends Model
         return $this->belongsTo(User::class, 'user_id');
     }
 
-    // En el modelo Laboratory
-    public function schedules()
+    public function schedules(): HasMany
     {
-        return $this->hasMany(Schedule::class, 'laboratory_id'); // 'id_laboratory' es la clave foránea en la tabla schedules
+        return $this->hasMany(Schedule::class, 'laboratory_id');
     }
 
     public function bookings(): HasMany

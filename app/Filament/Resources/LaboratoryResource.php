@@ -11,7 +11,6 @@ use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class LaboratoryResource extends Resource
@@ -71,10 +70,13 @@ class LaboratoryResource extends Resource
                                     ->relationship(
                                         name: 'products',
                                         titleAttribute: 'name',
-                                        modifyQueryUsing: fn (Builder $query, ?Model $record) => $query->where('laboratory_id', $record?->id)
+                                        modifyQueryUsing: fn ($query, Model $record) => $query
+                                            ->where('laboratory_id', $record->id)
+                                            ->orWhereNull('laboratory_id')
                                     )
                                     ->searchable()
-                                    ->preload(),
+                                    ->preload()
+                                    ->helperText('Seleccione los productos que estarán disponibles en este laboratorio'),
 
                             ])
                             ->columns(2),
