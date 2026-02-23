@@ -206,10 +206,12 @@ class ProductResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->heading('Gestión de Inventario')
+            ->description('Administra los equipos y materiales del laboratorio')
             ->columns([
                 ImageColumn::make('image')
                     ->label('')
-                    ->size(60)
+                    ->size(50)
                     ->circular()
                     ->defaultImageUrl(fn ($record) => $record->product_type === 'equipment'
                       ? asset('images/default-equipment.png')
@@ -221,30 +223,35 @@ class ProductResource extends Resource
                     ->sortable()
                     ->weight(FontWeight::Bold)
                     ->wrap()
-                    ->tooltip(function (Product $record) {
-                        return 'Descripción completa: '.$record->description;
-                    }),
+                    ->description(fn (Product $record) => $record->brand ? "{$record->brand} • {$record->model}" : ($record->serial_number ?? 'Sin série'), 'after'),
+
+                TextColumn::make('laboratory.name')
+                    ->label('Ubicación')
+                    ->searchable()
+                    ->sortable()
+                    ->badge()
+                    ->color('info')
+                    ->icon('heroicon-o-map-pin'),
 
                 TextColumn::make('available_quantity')
                     ->label('Stock')
                     ->numeric()
                     ->sortable()
                     ->color(function ($record) {
-                        // Cambia ($record->minimum_stock ?? 0) por el valor fijo que uses
-                        if ($record->available_quantity <= 5) { // Mismo valor que en el filtro
+                        if ($record->available_quantity <= 5) {
                             return 'danger';
                         }
 
                         return 'success';
                     })
                     ->icon(function ($record) {
-                        if ($record->available_quantity <= 5) { // Mismo valor que en el filtro
+                        if ($record->available_quantity <= 5) {
                             return 'heroicon-o-exclamation-triangle';
                         }
 
-                        return null;
+                        return 'heroicon-o-check-circle';
                     })
-                    ->iconPosition(IconPosition::After),
+                    ->iconPosition(IconPosition::Before),
 
                 TextColumn::make('product_type')
                     ->label('Tipo')
@@ -266,7 +273,7 @@ class ProductResource extends Resource
                     ->sortable(),
 
                 TextColumn::make('status')
-                    ->label('Condición')
+                    ->label('Estado')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'new' => 'success',
@@ -286,27 +293,17 @@ class ProductResource extends Resource
                     })
                     ->sortable(),
 
-                TextColumn::make('unit_cost')
-                    ->label('Costo Unitario')
-                    ->money('COP')
-                    ->sortable(),
                 ToggleColumn::make('available_for_loan')
                     ->label('Préstamo')
                     ->onColor('success')
-                    ->offColor('danger')
+                    ->offColor('gray')
                     ->sortable()
-                    ->alignCenter(),
-
-                TextColumn::make('laboratory.name')
-                    ->label('Ubicación')
-                    ->searchable()
-                    ->sortable()
-                    ->badge()
-                    ->color('info'),
+                    ->alignCenter()
+                    ->tooltip(fn (Product $record) => $record->available_for_loan ? 'Disponible para préstamo' : 'No disponible'),
             ])
             ->filters([
                 SelectFilter::make('product_type')
-                    ->label('Tipo de Producto')
+                    ->label('Tipo')
                     ->options([
                         'equipment' => 'Equipo',
                         'supply' => 'Suministro',
@@ -317,7 +314,7 @@ class ProductResource extends Resource
                     ->searchable(),
 
                 SelectFilter::make('status')
-                    ->label('Condición')
+                    ->label('Estado')
                     ->options([
                         'new' => 'Nuevo',
                         'used' => 'Buen Estado',
@@ -335,30 +332,76 @@ class ProductResource extends Resource
                     ->multiple(),
 
                 TernaryFilter::make('available_for_loan')
-                    ->label('Disponible para Préstamo')
-                    ->trueLabel('Solo disponibles')
+                    ->label('Préstamo')
+                    ->trueLabel('Disponibles')
                     ->falseLabel('No disponibles'),
 
                 Filter::make('low_stock')
-                    ->label('Stock Bajo')
-                    ->query(fn (Builder $query): Builder => $query->whereColumn('available_quantity', '<=', 'minimum_stock'))
+                    ->label('⚠️ Stock Bajo')
+                    ->query(fn (Builder $query): Builder => $query->where('available_quantity', '<=', 5))
                     ->default(false),
-            ], layout: FiltersLayout::AboveContentCollapsible)
+            ], layout: FiltersLayout::AboveContent)
+            ->filtersFormColumns(4)
             ->actions([
                 ActionGroup::make([
                     ViewAction::make()
+                        ->label('Ver')
+                        ->tooltip('Ver detalles')
                         ->icon('heroicon-o-eye')
-                        ->color('info'),
+                        ->color('gray'),
+
                     EditAction::make()
+                        ->label('Editar')
+                        ->tooltip('Editar')
                         ->icon('heroicon-o-pencil')
-                        ->color('warning'),
-                    DeleteAction::make()
-                        ->icon('heroicon-o-trash')
-                        ->color('danger'),
+                        ->color('gray'),
+                ])
+                    ->dropdown(true)
+                    ->label('Acciones')
+                    ->icon('heroicon-o-pencil-square')
+                    ->color('primary'),
+
+                ActionGroup::make([
+                    Action::make('loan_history')
+                        ->label('Historial de Préstamos')
+                        ->icon('heroicon-o-arrows-right-left')
+                        ->color('info')
+                        ->modalHeading(fn (Product $record) => "Préstamos del equipo: {$record->name}")
+                        ->modalContent(fn (Product $record) => view(
+                            'filament.pages.loan-history-modal',
+                            [
+                                'loans' => \App\Models\Loan::where('product_id', $record->id)
+                                    ->with(['user'])
+                                    ->orderBy('requested_at', 'desc')
+                                    ->limit(50)
+                                    ->get(),
+                            ]
+                        ))
+                        ->modalWidth('6xl')
+                        ->modalSubmitAction(false),
+
+                    Action::make('duplicate')
+                        ->label('Duplicar Producto')
+                        ->icon('heroicon-o-document-duplicate')
+                        ->color('success')
+                        ->action(function (Product $record) {
+                            $newProduct = $record->replicate();
+                            $newProduct->name = $record->name.' (Copia)';
+                            $newProduct->serial_number = null;
+                            $newProduct->available_quantity = 1;
+                            $newProduct->save();
+
+                            Notification::make()
+                                ->title('Producto duplicado')
+                                ->body("Se creó una copia: {$newProduct->name}")
+                                ->success()
+                                ->send();
+                        }),
 
                     Action::make('history')
-                        ->label('Historial')
+                        ->label('Historial de Bajas')
                         ->icon('heroicon-o-clock')
+                        ->color('warning')
                         ->modalHeading(fn (Product $record) => "Historial del equipo: {$record->name}")
                         ->modalContent(fn (Product $record) => view(
                             'filament.pages.history-modal-product-resource',
@@ -373,10 +416,15 @@ class ProductResource extends Resource
                         ->modalSubmitAction(false)
                         ->hidden(fn (Product $record) => $record->product_type !== 'equipment'),
 
+                    DeleteAction::make()
+                        ->label('Eliminar')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger'),
                 ])
-                    ->tooltip('Acciones')
-                    ->icon('heroicon-s-cog-6-tooth')
-                    ->color('primary'),
+                    ->label('Acciones')
+                    ->icon('heroicon-o-chevron-down')
+                    ->color('gray')
+                    ->size('sm'),
             ], position: ActionsPosition::BeforeCells)
             ->bulkActions([
                 BulkAction::make('markAsLost')
