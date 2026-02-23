@@ -19,7 +19,7 @@
                     <select 
                         name="laboratory" 
                         onchange="this.form.submit()"
-                        class="fi-select fi-select-md"
+                        class="fi-select fi-select-md border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                     >
                         <option value="">Todos los laboratorios</option>
                         @php
