@@ -23,98 +23,88 @@ use Saade\FilamentFullCalendar\FilamentFullCalendarPlugin;
 
 class AdminPanelProvider extends PanelProvider
 {
-    public function panel(Panel $panel): Panel
-    {
-        return $panel
-            ->default()
-            ->globalSearch(false)
-            ->id('admin')
-            ->path('admin')
-            ->login()
-            ->profile(false)
-            ->sidebarFullyCollapsibleOnDesktop()
-            ->colors([
-                'primary' => Color::Amber,
-            ])
-            ->navigationGroups([
-                NavigationGroup::make()
-                    ->label('Prestamos'),
-                NavigationGroup::make()
-                    ->label('Gestion de Reservas'),
-                NavigationGroup::make()
-                    ->label('Administracion'),
-                NavigationGroup::make()
-                    ->label('Configuracion'),
-            ])
+  public function panel(Panel $panel): Panel
+  {
+    return $panel
+      ->default()
+      ->globalSearch(false)
+      ->id('admin')
+      ->path('admin')
+      ->login()
+      ->profile(false)
+      ->sidebarFullyCollapsibleOnDesktop()
+      ->colors([
+        'primary' => Color::Amber,
+      ])
 
-            // ->plugin(FilamentSpatieRolesPermissionsPlugin::make())
+      // ->plugin(FilamentSpatieRolesPermissionsPlugin::make())
 
-            ->databaseNotifications()
-            ->plugins([
-                FilamentEditProfilePlugin::make()
-                    ->slug('mi-perfil')
-                    ->setTitle('Mi perfil')
-                    ->setNavigationLabel('Mi perfil')
-                    ->setIcon('heroicon-o-user')
-                    ->shouldShowDeleteAccountForm(false)
-                    ->shouldShowBrowserSessionsForm(false)
-                    ->shouldShowEditPasswordForm(false)
-                    ->shouldShowEditProfileForm(true)
+      ->databaseNotifications()
+      ->plugins([
+        FilamentEditProfilePlugin::make()
+          ->slug('mi-perfil')
+          ->setTitle('Mi perfil')
+          ->setNavigationLabel('Mi perfil')
+          ->setIcon('heroicon-o-user')
+          ->shouldShowDeleteAccountForm(false)
+          ->shouldShowBrowserSessionsForm(false)
+          ->shouldShowEditPasswordForm(false)
+          ->shouldShowEditProfileForm(true)
 
-                    ->shouldShowAvatarForm(
-                        value: true,
-                        directory: 'avatars', // image will be stored in 'storage/app/public/avatars
-                        rules: 'mimes:jpeg,png|max:1024'
-                    )
-                    ->customProfileComponents([
-                        \App\Livewire\CustomProfileComponent::class,
-                    ]),
+          ->shouldShowAvatarForm(
+            value: true,
+            directory: 'avatars', // image will be stored in 'storage/app/public/avatars
+            rules: 'mimes:jpeg,png|max:1024'
+          )
+          ->customProfileComponents([
+            \App\Livewire\CustomProfileComponent::class,
+          ]),
 
-            ])
+      ])
 
-            ->plugin(
-                \Hasnayeen\Themes\ThemesPlugin::make()
-            )
+      ->plugin(
+        \Hasnayeen\Themes\ThemesPlugin::make()
+      )
 
-            ->plugin(
-                FilamentFullCalendarPlugin::make()
-                    ->schedulerLicenseKey('')
-                    ->selectable(true)
-                    ->editable(true)
-                    ->timezone(config('app.timezone'))
-                    ->locale(config('app.locale'))
-                    ->plugins(['dayGrid', 'timeGrid'])
-                    ->config([
-                        'dayMaxEvents' => true,
-                        'moreLinkClick' => 'day',
-                    ])
-            )
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
-            ->pages([
-                Pages\Dashboard::class,
-                \App\Filament\Pages\Reports::class,
-            ])
-            ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
-            ->widgets([
-                // Widgets\AccountWidget::class,
-                // Widgets\FilamentInfoWidget::class,
-            ])
+      ->plugin(
+        FilamentFullCalendarPlugin::make()
+          ->schedulerLicenseKey('')
+          ->selectable(true)
+          ->editable(true)
+          ->timezone(config('app.timezone'))
+          ->locale(config('app.locale'))
+          ->plugins(['dayGrid', 'timeGrid'])
+          ->config([
+            'dayMaxEvents' => true,
+            'moreLinkClick' => 'day',
+          ])
+      )
+      ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
+      ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
+      ->pages([
+        Pages\Dashboard::class,
+        \App\Filament\Pages\Reports::class,
+      ])
+      ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
+      ->widgets([
+        // Widgets\AccountWidget::class,
+        // Widgets\FilamentInfoWidget::class,
+      ])
 
-            ->middleware([
-                EncryptCookies::class,
-                AddQueuedCookiesToResponse::class,
-                StartSession::class,
-                AuthenticateSession::class,
-                ShareErrorsFromSession::class,
-                VerifyCsrfToken::class,
-                SubstituteBindings::class,
-                DisableBladeIconComponents::class,
-                DispatchServingFilamentEvent::class,
-                SetTheme::class,
-            ])
-            ->authMiddleware([
-                Authenticate::class,
-            ]);
-    }
+      ->middleware([
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        AuthenticateSession::class,
+        ShareErrorsFromSession::class,
+        VerifyCsrfToken::class,
+        SubstituteBindings::class,
+        DisableBladeIconComponents::class,
+        DispatchServingFilamentEvent::class,
+        SetTheme::class,
+      ])
+      ->authMiddleware([
+        Authenticate::class,
+      ]);
+  }
 }
