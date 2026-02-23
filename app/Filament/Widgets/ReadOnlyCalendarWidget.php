@@ -3,11 +3,16 @@
 namespace App\Filament\Widgets;
 
 use App\Models\Schedule;
-use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class ReadOnlyCalendarWidget extends CalendarWidget
 {
-    public ?int $laboratory = null;
+    public ?int $laboratoryId = null;
+
+    public function mount(): void
+    {
+        $this->laboratoryId = request()->query('laboratory') ? (int) request()->query('laboratory') : null;
+    }
 
     public static function canView(): bool
     {
@@ -41,23 +46,40 @@ class ReadOnlyCalendarWidget extends CalendarWidget
         ]);
     }
 
-    public function getEvents(array $fetchInfo = []): array
+    public function fetchEvents(array $fetchInfo): array
     {
-        $labFromQuery = is_numeric(request()->query('laboratory')) ? (int) request()->query('laboratory') : null;
-        $effectiveLab = $this->laboratory ?? $labFromQuery ?? (Auth::user()->laboratory_id ?? null);
+        $start = Carbon::parse($fetchInfo['start']);
+        $end = Carbon::parse($fetchInfo['end']);
 
-        $query = Schedule::query()->where('type', 'unstructured');
+        $laboratoryId = $this->laboratoryId;
 
-        if (! empty($effectiveLab)) {
-            $query->where('laboratory_id', $effectiveLab);
+        $query = Schedule::query()
+            ->with('laboratory')
+            ->with(['booking' => function ($q) {
+                $q->where('status', 'approved');
+            }])
+            ->where('type', 'unstructured')
+            ->whereBetween('start_at', [$start, $end]);
+
+        if ($laboratoryId) {
+            $query->where('laboratory_id', $laboratoryId);
         }
 
-        return $query->with('laboratory')->get()
-            ->map(fn (Schedule $schedule) => [
-                'id' => $schedule->id,
-                'title' => $schedule->title ?? ($schedule->laboratory->name ?? '—'),
-                'start' => $schedule->start_at,
-                'end' => $schedule->end_at,
-            ])->toArray();
+        return $query->get()
+            ->map(function (Schedule $schedule) {
+                $hasApprovedBooking = $schedule->booking->isNotEmpty();
+
+                return [
+                    'id' => $schedule->id,
+                    'title' => $hasApprovedBooking
+                        ? 'Ocupado: '.($schedule->laboratory->name ?? '')
+                        : 'Libre: '.($schedule->laboratory->name ?? ''),
+                    'start' => $schedule->start_at,
+                    'end' => $schedule->end_at,
+                    'backgroundColor' => $hasApprovedBooking ? '#ef4444' : '#22c55e',
+                    'borderColor' => $hasApprovedBooking ? '#dc2626' : '#16a34a',
+                    'textColor' => '#ffffff',
+                ];
+            })->toArray();
     }
 }

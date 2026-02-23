@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\BookingResource\Pages\ListBookings;
+use App\Filament\Resources\BookingResource\Pages\ViewCalendarReadOnly;
 use App\Models\AcademicProgram;
 use App\Models\Booking;
 use App\Models\Product;
@@ -16,6 +17,7 @@ use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Navigation\NavigationItem;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables\Actions\Action as TableAction;
@@ -30,7 +32,7 @@ class BookingResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calendar-days';
 
-    protected static ?string $modelLabel = 'Reserva de Espacio';
+    protected static ?string $modelLabel = 'Reservar Espacio';
 
     protected static ?string $navigationLabel = 'Reservar Espacio';
 
@@ -40,11 +42,23 @@ class BookingResource extends Resource
 
     public static function canViewAny(): bool
     {
-        $user = Auth::user();
+        return true;
+    }
 
-        return $user
-          && ! $user->hasRole('LABORATORISTA')
-          && ! $user->hasRole('COORDINADOR');
+    public static function getNavigationItems(): array
+    {
+        return [
+            NavigationItem::make()
+                ->label('Reservar Espacio')
+                ->url('/admin/bookings')
+                ->icon(static::$navigationIcon)
+                ->isActiveWhen(fn (): bool => request()->is('admin/bookings') && ! request()->is('admin/bookings/calendario')),
+            NavigationItem::make()
+                ->label('Calendario')
+                ->url('/admin/bookings/calendario')
+                ->icon('heroicon-o-calendar')
+                ->isActiveWhen(fn (): bool => request()->is('admin/bookings/calendario')),
+        ];
     }
 
     public static function table(Table $table): Table
@@ -264,6 +278,7 @@ class BookingResource extends Resource
     {
         return [
             'index' => ListBookings::route('/'),
+            'calendario' => ViewCalendarReadOnly::route('/calendario'),
         ];
     }
 }
