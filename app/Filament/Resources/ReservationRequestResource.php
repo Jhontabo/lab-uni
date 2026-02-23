@@ -12,8 +12,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Actions\Action;
-use Filament\Tables\Actions\ActionGroup;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\ActionsPosition;
 use Filament\Tables\Filters\SelectFilter;
@@ -124,78 +122,74 @@ class ReservationRequestResource extends Resource
             ])
             ->filtersFormColumns(2)
             ->actions([
-                Action::make('ver')
+                Tables\Actions\Action::make('approve')
+                    ->label('Aprobar')
+                    ->icon('heroicon-o-check')
+                    ->color('success')
+                    ->size('sm')
+                    ->action(function (Booking $record) {
+                        $record->status = 'approved';
+                        $record->save();
+
+                        Notification::make()
+                            ->title('Reserva Aprobada')
+                            ->body("Tu reserva para el laboratorio {$record->laboratory->name} ha sido aprobada. Horario: {$record->start_at->format('d/m/Y H:i')} - {$record->end_at->format('d/m/Y H:i')}")
+                            ->success()
+                            ->icon('heroicon-o-check-circle')
+                            ->sendToDatabase($record->user);
+
+                        Notification::make()
+                            ->success()
+                            ->title('Reserva aprobada')
+                            ->body("La solicitud de {$record->user->name} {$record->user->last_name} ha sido aprobada.")
+                            ->send();
+                    })
+                    ->visible(fn (Booking $record) => $record->status === 'pending')
+                    ->tooltip('Aprobar esta solicitud'),
+
+                Tables\Actions\Action::make('reject')
+                    ->label('Rechazar')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('danger')
+                    ->size('sm')
+                    ->form([
+                        Textarea::make('rejection_reason')
+                            ->label('Motivo del rechazo')
+                            ->required()
+                            ->placeholder('Indique la razón del rechazo')
+                            ->maxLength(503),
+                    ])
+                    ->action(function (Booking $record, array $data) {
+                        $record->status = 'rejected';
+                        $record->rejection_reason = $data['rejection_reason'];
+                        $record->save();
+
+                        Notification::make()
+                            ->title('Reserva Rechazada')
+                            ->body("Tu reserva para el laboratorio {$record->laboratory->name} ha sido rechazada. Motivo: {$data['rejection_reason']}")
+                            ->danger()
+                            ->icon('heroicon-o-x-circle')
+                            ->sendToDatabase($record->user);
+
+                        Notification::make()
+                            ->danger()
+                            ->title('Reserva rechazada')
+                            ->body("Solicitud de {$record->user->name} {$record->user->last_name} rechazada.")
+                            ->send();
+                    })
+                    ->visible(fn (Booking $record) => $record->status === 'pending')
+                    ->tooltip('Rechazar esta solicitud'),
+
+                Tables\Actions\Action::make('ver')
                     ->label('Ver')
                     ->icon('heroicon-o-eye')
-                    ->color('info')
+                    ->color('gray')
+                    ->size('sm')
                     ->modalHeading(fn (Booking $record) => "Reserva #{$record->id}")
                     ->modalWidth('2xl')
                     ->modalSubmitAction(false)
                     ->modalCancelActionLabel('Cerrar')
                     ->form(fn (Booking $record) => static::getDetailModalSchema($record)),
-
-                ActionGroup::make([
-                    Action::make('Aprobar')
-                        ->action(function (Booking $record) {
-                            $record->status = 'approved';
-                            $record->save();
-
-                            Notification::make()
-                                ->title('Reserva Aprobada')
-                                ->body("Tu reserva para el laboratorio {$record->laboratory->name} ha sido aprobada. Horario: {$record->start_at->format('d/m/Y H:i')} - {$record->end_at->format('d/m/Y H:i')}")
-                                ->success()
-                                ->icon('heroicon-o-check-circle')
-                                ->sendToDatabase($record->user);
-
-                            Notification::make()
-                                ->success()
-                                ->title('Reserva aprobada')
-                                ->body("La solicitud de {$record->user->name} {$record->user->last_name} ha sido aprobada.")
-                                ->send();
-                        })
-                        ->visible(fn (Booking $record) => $record->status === 'pending')
-                        ->color('success')
-                        ->icon('heroicon-o-check')
-                        ->modalHeading('Aprobar solicitud')
-                        ->modalDescription('¿Está seguro de aprobar esta solicitud de reserva?')
-                        ->requiresConfirmation(),
-
-                    Action::make('Rechazar')
-                        ->form([
-                            Textarea::make('rejection_reason')
-                                ->label('Motivo del rechazo')
-                                ->required()
-                                ->placeholder('Indique la razón del rechazo')
-                                ->maxLength(503),
-                        ])
-                        ->action(function (Booking $record, array $data) {
-                            $record->status = 'rejected';
-                            $record->rejection_reason = $data['rejection_reason'];
-                            $record->save();
-
-                            Notification::make()
-                                ->title('Reserva Rechazada')
-                                ->body("Tu reserva para el laboratorio {$record->laboratory->name} ha sido rechazada. Motivo: {$data['rejection_reason']}")
-                                ->danger()
-                                ->icon('heroicon-o-x-circle')
-                                ->sendToDatabase($record->user);
-
-                            Notification::make()
-                                ->danger()
-                                ->title('Reserva rechazada')
-                                ->body("Solicitud de {$record->user->name} {$record->user->last_name} rechazada.")
-                                ->send();
-                        })
-                        ->visible(fn (Booking $record) => $record->status === 'pending')
-                        ->color('danger')
-                        ->icon('heroicon-o-x-mark')
-                        ->modalHeading('Rechazar solicitud')
-                        ->modalDescription('Por favor indique el motivo del rechazo.'),
-                ])
-                    ->label('Acciones')
-                    ->icon('heroicon-o-ellipsis-vertical')
-                    ->color('gray')
-                    ->visible(fn (Booking $record) => $record->status === 'pending'),
             ])
             ->bulkActions([
                 Tables\Actions\DeleteBulkAction::make()
