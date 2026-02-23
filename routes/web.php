@@ -1,8 +1,9 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LoginController;
+use App\Services\ReportService;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
 
 // Ruta principal - login
 Route::get('/', function () {
@@ -15,7 +16,7 @@ Route::get('auth/google/callback', [LoginController::class, 'handleGoogleCallbac
 
 // Ruta dashboard - TODOS van a /admin si están autenticados
 Route::get('/dashboard', function () {
-    if (!Auth::check()) {
+    if (! Auth::check()) {
         abort(404); // Devuelve 404 para usuarios no autenticados
     }
 
@@ -23,6 +24,11 @@ Route::get('/dashboard', function () {
     return redirect('/admin');
 })->name('dashboard');
 
+// Ruta para descargar reporte PDF
+Route::middleware(['auth'])->get('/reports/dashboard', function () {
+    $reportService = new ReportService;
 
+    return $reportService->generateDashboardReport();
+})->name('reports.dashboard.download');
 
-Route::middleware(['web', 'auth'])->get('/calendar-only', fn() => view('filament.pages.booking-calendar'));
+Route::middleware(['web', 'auth'])->get('/calendar-only', fn () => view('filament.pages.booking-calendar'));
