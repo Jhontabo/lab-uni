@@ -31,4 +31,11 @@ Route::middleware(['auth'])->get('/reports/dashboard', function () {
     return $reportService->generateDashboardReport();
 })->name('reports.dashboard.download');
 
+// Ruta para descargar reporte Excel
+Route::middleware(['auth'])->get('/reports/excel', function () {
+    $reportService = new ReportService;
+
+    return $reportService->generateExcelReport();
+})->name('reports.excel.download');
+
 Route::middleware(['web', 'auth'])->get('/calendar-only', fn () => view('filament.pages.booking-calendar'));

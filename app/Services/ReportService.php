@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exports\DashboardExport;
 use App\Models\Booking;
 use App\Models\Laboratory;
 use App\Models\Loan;
@@ -10,6 +11,7 @@ use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Facades\Excel;
 
 class ReportService
 {
@@ -353,5 +355,16 @@ class ReportService
             'usersByRole' => $usersByRole,
             'pendingBookings' => $pendingBookingsArray,
         ];
+    }
+
+    public function generateExcelReport()
+    {
+        $data = $this->getDashboardData();
+
+        $export = new DashboardExport($data);
+
+        $filename = 'reporte_dashboard_'.Carbon::now()->format('Y-m-d_His');
+
+        return Excel::download($export, $filename.'.xlsx');
     }
 }
