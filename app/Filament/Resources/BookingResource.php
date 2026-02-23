@@ -50,14 +50,18 @@ class BookingResource extends Resource
         return [
             NavigationItem::make()
                 ->label('Reservar Espacio')
-                ->url('/admin/bookings')
+                ->url(static::getUrl())
                 ->icon(static::$navigationIcon)
+                ->group('Gestion de Reservas')
                 ->isActiveWhen(fn (): bool => request()->is('admin/bookings') && ! request()->is('admin/bookings/calendario')),
-            NavigationItem::make()
-                ->label('Calendario')
-                ->url('/admin/bookings/calendario')
-                ->icon('heroicon-o-calendar')
-                ->isActiveWhen(fn (): bool => request()->is('admin/bookings/calendario')),
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => ListBookings::route('/'),
+            'calendario' => ViewCalendarReadOnly::route('/calendario'),
         ];
     }
 
@@ -127,6 +131,13 @@ class BookingResource extends Resource
                     }),
             ])
             ->filtersFormColumns(2)
+            ->headerActions([
+                TableAction::make('ver_calendario')
+                    ->label('Ver Calendario')
+                    ->icon('heroicon-o-calendar')
+                    ->color('gray')
+                    ->url('/admin/bookings/calendario'),
+            ])
             ->actions([
                 TableAction::make('reservar')
                     ->label('Reservar')
@@ -272,13 +283,5 @@ class BookingResource extends Resource
     public static function getWidgets(): array
     {
         return [];
-    }
-
-    public static function getPages(): array
-    {
-        return [
-            'index' => ListBookings::route('/'),
-            'calendario' => ViewCalendarReadOnly::route('/calendario'),
-        ];
     }
 }

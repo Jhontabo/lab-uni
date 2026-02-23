@@ -1,13 +1,17 @@
 <x-filament::page>
+    @php
+        $laboratoryId = request()->query('laboratory');
+    @endphp
+    
     <div class="space-y-4">
         <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-4">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                        Calendario de Reservas
+                        Calendario de Disponibilidad
                     </h2>
                     <p class="text-sm text-gray-600 dark:text-gray-400">
-                        Vista de solo lectura. Aquí puedes ver los espacios libres y ocupados.
+                        🟢 = Libre &nbsp;|&nbsp; 🔴 = Ocupado &nbsp;|&nbsp; Selecciona un laboratorio para filtrar
                     </p>
                 </div>
                 
@@ -31,8 +35,10 @@
             </div>
         </div>
         
-        <x-filament::card class="p-0">
-            @livewire(\App\Filament\Widgets\ReadOnlyCalendarWidget::class, ['laboratoryId' => request()->query('laboratory')])
+        <x-filament::card class="p-0 overflow-hidden">
+            <div id="calendar-container" style="min-height: 600px;">
+                @livewire(\App\Filament\Widgets\ReadOnlyCalendarWidget::class, ['laboratoryId' => $laboratoryId])
+            </div>
         </x-filament::card>
     </div>
 </x-filament::page>

@@ -5,6 +5,7 @@ namespace App\Providers\Filament;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Navigation\NavigationGroup;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -34,6 +35,16 @@ class AdminPanelProvider extends PanelProvider
             ->sidebarFullyCollapsibleOnDesktop()
             ->colors([
                 'primary' => Color::Amber,
+            ])
+            ->navigationGroups([
+                NavigationGroup::make()
+                    ->label('Gestion de Reservas'),
+                NavigationGroup::make()
+                    ->label('Prestamos'),
+                NavigationGroup::make()
+                    ->label('Administracion'),
+                NavigationGroup::make()
+                    ->label('Configuracion'),
             ])
 
           // ->plugin(FilamentSpatieRolesPermissionsPlugin::make())

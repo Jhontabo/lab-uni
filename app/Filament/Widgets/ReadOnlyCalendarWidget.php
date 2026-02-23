@@ -43,6 +43,11 @@ class ReadOnlyCalendarWidget extends CalendarWidget
             'eventResize' => null,
             'hiddenDays' => [0, 6],
             'firstDay' => 1,
+            'headerToolbar' => [
+                'left' => 'prev,next today',
+                'center' => 'title',
+                'right' => 'dayGridMonth,timeGridWeek,timeGridDay',
+            ],
         ]);
     }
 
